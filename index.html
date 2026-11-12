@@ -5,12 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Song Duel Wheel</title>
 <style>
-:root{--bg:#f3efe6;--ink:#1d1b2e;--mut:#6b6880;--card:#fff;--line:#d9d3c4;--acc:#2b3dff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15141f;--ink:#f1eefc;--mut:#9a97b3;--card:#201f2f;--line:#33324a;--acc:#7c8bff;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#15141f;--ink:#f1eefc;--mut:#9a97b3;--card:#201f2f;--line:#33324a;--acc:#7c8bff;color-scheme:dark}
+:root{--bg:#fff5fa;--g1:#ffd3ea;--g2:#d6c6ff;--ink:#2a1a3d;--mut:#7a6a8f;--card:rgba(255,255,255,.84);--line:#ecd3e6;--acc:#d62a8c;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15141f;--g1:#2a1642;--g2:#12122b;--ink:#f6eefc;--mut:#b3a6c9;--card:rgba(32,31,47,.86);--line:#3d3256;--acc:#ff7ac6;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#15141f;--g1:#2a1642;--g2:#12122b;--ink:#f6eefc;--mut:#b3a6c9;--card:rgba(32,31,47,.86);--line:#3d3256;--acc:#ff7ac6;color-scheme:dark}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *,*::before,*::after{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Trebuchet MS","Segoe UI",system-ui,sans-serif}
+body{margin:0;background:linear-gradient(135deg,var(--g1),var(--g2)) fixed;color:var(--ink);font:16px/1.5 "Trebuchet MS","Segoe UI",system-ui,sans-serif}
 main{max-width:1000px;margin:0 auto;padding:16px}
 h1{font:900 clamp(28px,6vw,48px)/1 Georgia,"Times New Roman",serif;margin:8px 0 4px;letter-spacing:-.02em}
 h2{font:700 20px Georgia,serif;margin:0 0 10px}
@@ -46,10 +46,18 @@ ul.log li{padding:6px 0;border-bottom:1px solid var(--line)}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .win{font-weight:800;color:var(--acc)}
 .tbl{overflow-x:auto}
+#bg{position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none}
+.mute{position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);right:8px;z-index:5;background:var(--card);color:var(--ink);border:1px solid var(--line);padding:8px 12px;min-height:40px}
+.lbs{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}.lbs h3{margin:0 0 6px;font:700 16px Georgia,serif}.lbs ol{list-style:none;margin:0;padding:0}.lbs li{display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);font-size:14px}.lbs li span:first-child{width:24px;text-align:center}.lbs li b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.lbs em{font-style:normal;color:var(--mut);font-size:12px;white-space:nowrap}
+#vid{position:fixed;z-index:-3;border:0;pointer-events:none;object-fit:cover;top:50%;left:50%;transform:translate(-50%,-50%);width:max(100vw,177.78vh);height:max(100vh,56.25vw)}
+#veil{position:fixed;inset:0;z-index:-2;background:rgba(30,10,50,.35);pointer-events:none}
+.hasvid main>h1,.hasvid main>p.sub{color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.7)}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
+<canvas id="bg" aria-hidden="true"></canvas>
+<button class="mute" id="mute" aria-label="Toggle sound">🔊</button>
 <main>
 <h1>Song Duel Wheel</h1>
 <p class="sub">5 players, a pile of songs, one wheel. Spin, vote, win your next picks.</p>
@@ -75,6 +83,7 @@ ul.log li{padding:6px 0;border-bottom:1px solid var(--line)}
         <div class="duel"><div class="song" id="sA"><small>Spin to pick the first song</small></div><div class="vs">vs</div><div class="song" id="sB"><small>then the second</small></div></div>
         <div id="voteBox" class="hide"><p class="sub" style="margin:0 0 8px">The other three vote for the better song.</p><div class="votes" id="votes"></div><div class="row" style="margin-top:12px"><button id="confirm" disabled>Confirm result</button></div></div>
       </div>
+      <div class="card"><h2>Leaderboard</h2><div id="lb"></div></div>
       <div class="card"><h2>History</h2><ul class="log" id="log"></ul></div>
     </div>
   </div>
@@ -97,7 +106,7 @@ ul.log li{padding:6px 0;border-bottom:1px solid var(--line)}
 <script>
 const COLORS=["#e4572e","#2b9348","#2b3dff","#f2a900","#a23bbf"];
 const $=id=>document.getElementById(id);
-let players,songs,wins,total,round,pick,votes,angle=0,spinning=false;
+let players,songs,wins,total,round,pick,votes,angle=0,spinning=false,songStats=[];
 
 function esc(s){return s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 function buildInputs(box,n,names){
@@ -128,7 +137,7 @@ $("start").onclick=()=>{
   players=[...$("pgrid").querySelectorAll("input[data-n]")].map((e,i)=>e.value.trim()||"Player "+(i+1));
   songs=readSongs($("pgrid"));
   if(songs.length<2||new Set(songs.map(s=>s.o)).size<2){alert("Add songs for at least two players.");return}
-  wins=players.map(()=>0);total=players.map(()=>0);round=1;
+  wins=players.map(()=>0);total=players.map(()=>0);round=1;songStats=[];
   $("log").innerHTML="";
   $("setup").classList.add("hide");$("game").classList.remove("hide");
   newDuel();
@@ -146,7 +155,7 @@ function newDuel(){
 }
 function wheelSongs(){return pick.length?songs.filter(s=>s.o!==pick[0].o):songs}
 function render(){
-  $("rnd").textContent=round;$("left").textContent=songs.length;
+  $("rnd").textContent=round;$("left").textContent=songs.length;lb();
   $("score").innerHTML=players.map((p,i)=>`<span class="chip"><span class="dot" style="background:${COLORS[i]}"></span>${esc(p)} <b>${wins[i]}</b> wins · ${songs.filter(s=>s.o===i).length} left</span>`).join("");
   $("hint").textContent=pick.length?"Second spin: a different player's song.":"First spin of the duel.";
   draw();
@@ -173,16 +182,16 @@ $("spin").onclick=()=>{
   const cur=((angle%(2*Math.PI))+2*Math.PI)%(2*Math.PI);
   let end=((target%(2*Math.PI))+2*Math.PI)%(2*Math.PI);
   let delta=end-cur;if(delta<0)delta+=2*Math.PI;delta+=2*Math.PI*(5+Math.floor(Math.random()*3));
-  const start=angle,dur=reduce()?200:4200,t0=performance.now();
+  let lastK=Math.floor(angle/a);const start=angle,dur=reduce()?200:4200,t0=performance.now();
   (function f(t){
     const p=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-p,4);
-    angle=start+delta*e;draw();
+    angle=start+delta*e;const kk=Math.floor(angle/a);if(kk!==lastK){lastK=kk;tick()}draw();
     if(p<1)requestAnimationFrame(f);else{spinning=false;landed(L[idx])}
   })(t0);
 };
 function reduce(){return matchMedia("(prefers-reduced-motion:reduce)").matches}
 function landed(s){
-  pick.push(s);
+  pick.push(s);pop();
   const el=pick.length===1?$("sA"):$("sB");
   el.innerHTML=`<b>${esc(s.t)}</b><small>${esc(players[s.o])}</small>`;el.style.borderColor=COLORS[s.o];
   if(pick.length===1){$("spin").disabled=false;render();return}
@@ -192,7 +201,7 @@ function landed(s){
   $("votes").innerHTML=vs.map(i=>`<div class="voter"><div class="pname"><span class="dot" style="background:${COLORS[i]}"></span>${esc(players[i])}</div><div class="b"><button class="ghost" data-v="${i}" data-s="0">Left</button><button class="ghost" data-v="${i}" data-s="1">Right</button></div></div>`).join("");
   $("votes").onclick=e=>{
     const b=e.target.closest("button");if(!b)return;
-    votes[b.dataset.v]=+b.dataset.s;
+    votes[b.dataset.v]=+b.dataset.s;click();
     $("votes").querySelectorAll(`button[data-v="${b.dataset.v}"]`).forEach(x=>x.classList.toggle("sel",x===b));
     $("confirm").disabled=Object.keys(votes).length<vs.length;
   };
@@ -201,7 +210,7 @@ function landed(s){
 $("confirm").onclick=()=>{
   const v=Object.values(votes),r=v.filter(x=>x===1).length,w=r>v.length/2?1:0;
   const win=pick[w],lose=pick[1-w];
-  wins[win.o]++;total[win.o]++;
+  wins[win.o]++;total[win.o]++;songStats.push({t:pick[0].t,o:pick[0].o,v:v.length-r,n:v.length,w:w===0},{t:pick[1].t,o:pick[1].o,v:r,n:v.length,w:w===1});fanfare();
   const li=document.createElement("li");
   li.innerHTML=`<span class="win">${esc(win.t)}</span> (${esc(players[win.o])}) beat ${esc(lose.t)} (${esc(players[lose.o])})`;
   $("log").prepend(li);
@@ -235,9 +244,30 @@ function finish(){
   $("between").classList.add("hide");$("game").classList.add("hide");
   const rows=players.map((p,i)=>({p,i,w:total[i]})).sort((a,b)=>b.w-a.w);
   $("ftbl").innerHTML="<table style='width:100%;border-collapse:collapse'>"+rows.map((r,k)=>`<tr style="border-bottom:1px solid var(--line)"><td style="padding:8px"><span class="dot" style="background:${COLORS[r.i]};display:inline-block"></span> ${esc(r.p)}${k===0&&r.w?" 🏆":""}</td><td style="padding:8px;text-align:right"><b>${r.w}</b> total wins</td></tr>`).join("")+"</table>";
-  $("final").classList.remove("hide");
+  $("ftbl").innerHTML=lbHTML();fanfare();$("final").classList.remove("hide");
 }
 $("again").onclick=init;
+let AC,muted=false;
+function beep(f,d,type="sine",v=.12,when=0){if(muted)return;try{if(!AC)AC=new (window.AudioContext||window.webkitAudioContext)();if(AC.state==="suspended")AC.resume();const o=AC.createOscillator(),g=AC.createGain(),t=AC.currentTime+when;o.type=type;o.frequency.value=f;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d)}catch(e){}}
+const tick=()=>beep(900,.04,"square",.04),pop=()=>{beep(520,.12,"triangle");beep(780,.15,"triangle",.1,.08)},click=()=>beep(660,.08,"triangle"),fanfare=()=>[523,659,784,1047].forEach((f,i)=>beep(f,.25,"triangle",.14,i*.12));
+$("mute").onclick=()=>{muted=!muted;$("mute").textContent=muted?"🔇":"🔊"};
+function lbHTML(){
+ const ps=players.map((p,i)=>({p,i,w:total[i],v:songStats.filter(x=>x.o===i).reduce((a,x)=>a+x.v,0)})).sort((a,b)=>b.w-a.w||b.v-a.v);
+ const ss=[...songStats].sort((a,b)=>(b.w-a.w)||(b.v-a.v)).slice(0,10);
+ const m=k=>["🥇","🥈","🥉"][k]||k+1;
+ return `<div class="lbs"><div><h3>Players</h3><ol>${ps.map((r,k)=>`<li><span>${m(k)}</span><span class="dot" style="background:${COLORS[r.i]}"></span><b>${esc(r.p)}</b><em>${r.w} wins · ${r.v} votes</em></li>`).join("")}</ol></div><div><h3>Top songs</h3>${ss.length?`<ol>${ss.map((x,k)=>`<li><span>${m(k)}</span><span class="dot" style="background:${COLORS[x.o]}"></span><b>${esc(x.t)}</b><em>${x.v}/${x.n} votes${x.w?" · won":""}</em></li>`).join("")}</ol>`:'<p class="sub">Songs appear after the first duel.</p>'}</div></div>`}
+function lb(){$("lb").innerHTML=lbHTML()}
+function clearVid(){["vid","veil"].forEach(i=>{const e=$(i);if(e)e.remove()});document.body.classList.remove("hasvid")}
+function showVid(el){clearVid();el.id="vid";const v=document.createElement("div");v.id="veil";document.body.prepend(v);document.body.prepend(el);document.body.classList.add("hasvid")}
+/* Background video is fixed: change DEFAULT_VIDEO below to use another YouTube video. */
+/* Default background: Eminem - Lose Yourself. Change the ID below to use another YouTube video. */
+const DEFAULT_VIDEO="nPA2czkOsFE";
+(function(){const id=DEFAULT_VIDEO,f=document.createElement("iframe");f.src=`https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=1&controls=0&loop=1&playlist=${id}&playsinline=1&modestbranding=1&rel=0`;f.allow="autoplay; encrypted-media";f.setAttribute("aria-hidden","true");f.tabIndex=-1;showVid(f)})();
+(function(){const c=$("bg"),x=c.getContext("2d"),G=["♪","♫","♥","✦","♬","✿"],P=["#ff7ac6","#b58cff","#ffb3da","#8fcaff","#ffffff"];let W,H;
+function rs(){W=c.width=innerWidth;H=c.height=innerHeight}rs();addEventListener("resize",rs);
+const items=[];for(let i=0;i<Math.round(Math.min(40,innerWidth/28));i++)items.push({x:Math.random()*W,y:Math.random()*H,s:14+Math.random()*30,v:.2+Math.random()*.6,g:G[i%G.length],c:P[i%P.length],p:Math.random()*6,a:.25+Math.random()*.35});
+function f(t){x.clearRect(0,0,W,H);items.forEach(o=>{o.y-=o.v;if(o.y<-40){o.y=H+40;o.x=Math.random()*W}x.globalAlpha=o.a;x.fillStyle=o.c;x.font=o.s+"px serif";x.fillText(o.g,o.x+Math.sin(t/1500+o.p)*20,o.y)});if(!reduce())requestAnimationFrame(f)}
+requestAnimationFrame(f)})();
 $("reset").onclick=()=>{if(confirm("Start a new game? Current progress will be lost."))init()};
 init();
 </script>
