@@ -1,0 +1,2677 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SoundClash 5 — 5-Player Music Battle Party Game</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & Space Grotesk -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome for crisp icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Space Grotesk', 'sans-serif'],
+                    },
+                    colors: {
+                        darkBg: '#09090f',
+                        cardBg: '#12131f',
+                        neonPink: '#ff2a85',
+                        neonCyan: '#00f0ff',
+                        neonPurple: '#9d4edd',
+                        neonLime: '#39ff14',
+                        neonAmber: '#ffb703'
+                    },
+                    animation: {
+                        'pulse-glow': 'pulseGlow 2.5s infinite ease-in-out',
+                        'float': 'float 4s ease-in-out infinite',
+                        'pop-in': 'popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards'
+                    },
+                    keyframes: {
+                        pulseGlow: {
+                            '0%, 100%': { boxShadow: '0 0 18px rgba(0, 240, 255, 0.25), 0 0 36px rgba(255, 42, 133, 0.15)' },
+                            '50%': { boxShadow: '0 0 28px rgba(0, 240, 255, 0.5), 0 0 50px rgba(255, 42, 133, 0.3)' },
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-6px)' },
+                        },
+                        popIn: {
+                            '0%': { opacity: '0', transform: 'scale(0.92)' },
+                            '100%': { opacity: '1', transform: 'scale(1)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #090612;
+            color: #f3f4f6;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Full-Screen Animated Y2K / 2010s Pop Concert Background Canvas */
+        #partyBgCanvas {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Frosted Dark-Rose / Violet Glassmorphism for High Text Contrast */
+        .glass-panel {
+            background: rgba(16, 10, 28, 0.84);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 105, 180, 0.18);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0d0817;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3d1e54;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #ff2a85;
+        }
+
+        /* Neon Button Styling */
+        .btn-neon-primary {
+            background: linear-gradient(135deg, #ff2a85 0%, #c77dff 100%);
+            box-shadow: 0 4px 20px rgba(255, 42, 133, 0.45);
+            transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        .btn-neon-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 28px rgba(255, 42, 133, 0.7);
+        }
+        .btn-neon-primary:active:not(:disabled) {
+            transform: translateY(1px);
+        }
+        .btn-neon-primary:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .btn-neon-cyan {
+            background: linear-gradient(135deg, #00b4d8 0%, #00f0ff 100%);
+            color: #06070d;
+            box-shadow: 0 4px 18px rgba(0, 240, 255, 0.35);
+            transition: all 0.2s ease;
+        }
+        .btn-neon-cyan:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(0, 240, 255, 0.6);
+        }
+        .btn-neon-cyan:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .wheel-pointer {
+            filter: drop-shadow(0 4px 10px rgba(255, 42, 133, 0.85));
+        }
+
+        /* Custom Range Slider for Pop Beat Volume */
+        input[type="range"].pop-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            background: rgba(255, 255, 255, 0.15);
+            height: 5px;
+            border-radius: 999px;
+        }
+        input[type="range"].pop-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #ff2a85;
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(255, 42, 133, 0.8);
+        }
+    </style>
+</head>
+<body class="font-sans antialiased selection:bg-neonPink selection:text-white relative">
+
+    <!-- Animated Glossy Y2K / 2010s Pop Concert Background Canvas -->
+    <canvas id="partyBgCanvas"></canvas>
+
+    <!-- Toast / Notification Container (Never uses alert()) -->
+    <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+    <!-- Top Navigation & Phase Stepper -->
+    <header class="sticky top-0 z-40 glass-panel border-b border-pink-500/20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+            <!-- Brand Logo -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-neonPink via-fuchsia-400 to-neonCyan flex items-center justify-center shadow-lg shadow-neonPink/40">
+                    <i class="fa-solid fa-compact-disc fa-spin text-darkBg text-xl" style="animation-duration: 5s;"></i>
+                </div>
+                <div>
+                    <h1 class="font-display font-extrabold text-xl sm:text-2xl tracking-tight bg-gradient-to-r from-white via-pink-300 to-neonCyan bg-clip-text text-transparent">
+                        SOUNDCLASH 5
+                    </h1>
+                    <p class="text-[11px] text-pink-300/80 uppercase tracking-widest font-semibold">Pop Anthem Party Arena</p>
+                </div>
+            </div>
+
+            <!-- Phase Indicator Pills -->
+            <nav aria-label="Game Phases" class="flex items-center gap-1.5 sm:gap-2 bg-darkBg/80 p-1.5 rounded-2xl border border-white/10">
+                <div id="step-badge-1" class="phase-pill px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-1.5 bg-neonPink/20 text-neonPink border border-neonPink/40 transition-all">
+                    <span class="w-5 h-5 rounded-full bg-neonPink text-white text-[11px] flex items-center justify-center font-bold">1</span>
+                    <span>Setup Pool</span>
+                </div>
+                <i class="fa-solid fa-chevron-right text-gray-600 text-xs"></i>
+                <div id="step-badge-2" class="phase-pill px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-1.5 text-gray-500 transition-all">
+                    <span class="w-5 h-5 rounded-full bg-gray-800 text-gray-400 text-[11px] flex items-center justify-center font-bold">2</span>
+                    <span>Duel Arena</span>
+                </div>
+                <i class="fa-solid fa-chevron-right text-gray-600 text-xs"></i>
+                <div id="step-badge-3" class="phase-pill px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-1.5 text-gray-500 transition-all">
+                    <span class="w-5 h-5 rounded-full bg-gray-800 text-gray-400 text-[11px] flex items-center justify-center font-bold">3</span>
+                    <span>Reward Draft</span>
+                </div>
+            </nav>
+
+            <!-- Pop Groove Vibe Player, Leaderboard Toggle, SFX & Reset Controls -->
+            <div class="flex flex-wrap items-center gap-2">
+                <!-- 124 BPM Dance-Pop Background Vibe Toggle + Volume -->
+                <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-pink-500/15 border border-pink-500/35">
+                    <button id="bgBeatToggleBtn" onclick="toggleBgPopBeat()" title="Play/Pause 124 BPM Y2K Dance-Pop Background Groove" class="flex items-center gap-1.5 text-xs font-bold text-pink-200 hover:text-white transition-all">
+                        <i id="bgBeatIcon" class="fa-solid fa-music text-neonPink"></i>
+                        <span id="bgBeatText">Pop Beat: Off</span>
+                    </button>
+                    <input id="bgBeatVolume" type="range" min="0" max="100" value="45" oninput="updateBgBeatVolume(this.value)" title="Background Beat Volume" class="pop-slider w-14 sm:w-16">
+                </div>
+
+                <!-- Live Leaderboard Quick-Jump / Drawer Button -->
+                <button id="navLeaderboardBtn" onclick="toggleLeaderboardModal()" class="px-3 py-2 rounded-xl bg-neonAmber/15 hover:bg-neonAmber/25 border border-neonAmber/40 text-neonAmber text-xs sm:text-sm font-bold flex items-center gap-1.5 transition-all">
+                    <i class="fa-solid fa-ranking-star"></i>
+                    <span class="hidden sm:inline">Leaderboards</span>
+                </button>
+
+                <button id="muteToggleBtn" onclick="toggleAudio()" title="Toggle UI Sound Effects" class="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-neonCyan transition-all flex items-center gap-1.5 text-xs font-medium">
+                    <i id="muteIcon" class="fa-solid fa-volume-high"></i>
+                    <span class="hidden lg:inline" id="muteText">SFX</span>
+                </button>
+                <button onclick="openResetModal()" title="Restart Game" class="p-2.5 rounded-xl bg-white/5 hover:bg-red-500/20 border border-white/10 hover:border-red-500/40 text-gray-300 hover:text-red-400 transition-all text-xs">
+                    <i class="fa-solid fa-rotate-right"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+
+        <!-- ===================================================================== -->
+        <!-- PHASE 1: SETUP & SONG SUBMISSION (5 Players x 4 Songs = 20 Songs)     -->
+        <!-- ===================================================================== -->
+        <section id="phase-setup" class="animate-pop-in">
+            <div class="glass-panel rounded-3xl p-6 sm:p-8 mb-6 border border-pink-500/20">
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-white/10">
+                    <div>
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neonPink/15 border border-neonPink/35 text-pink-300 text-xs font-bold uppercase tracking-wider mb-2">
+                            <i class="fa-solid fa-sparkles"></i> 5 Players • 4 Songs Each • 20 Track Pool
+                        </div>
+                        <h2 class="font-display text-2xl sm:text-3xl font-bold text-white">Assemble Your Lineup & Tracklist</h2>
+                        <p class="text-gray-300 text-sm sm:text-base mt-1">
+                            Each player picks <span class="text-white font-semibold">4 tracks</span>. Every duel pits 2 random players head-to-head while the other 3 judge—and <span class="text-neonPink font-semibold">both competed tracks are eliminated</span> after each battle!
+                        </p>
+                    </div>
+
+                    <!-- Quick Actions & Blind Mode Toggle -->
+                    <div class="flex flex-wrap items-center gap-3 shrink-0">
+                        <!-- Blind Battle Toggle -->
+                        <label for="blindModeToggle" class="flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-darkBg/90 border border-white/10 cursor-pointer hover:border-neonPurple/50 transition-all select-none">
+                            <div class="relative">
+                                <input type="checkbox" id="blindModeToggle" class="sr-only peer" checked onchange="playClick()">
+                                <div class="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:bg-neonPurple transition-colors"></div>
+                                <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
+                            </div>
+                            <div class="text-xs">
+                                <div class="font-bold text-white flex items-center gap-1.5">
+                                    <i class="fa-solid fa-mask text-neonPurple"></i> Blind Battle Mode
+                                </div>
+                                <div class="text-gray-400">Hide song owners during vote</div>
+                            </div>
+                        </label>
+
+                        <button type="button" onclick="fillDemoData()" class="px-4 py-3 rounded-2xl bg-pink-500/20 hover:bg-pink-500/30 border border-pink-400/40 text-pink-200 font-semibold text-sm flex items-center gap-2 transition-all shadow-lg shadow-pink-500/15">
+                            <i class="fa-solid fa-wand-magic-sparkles text-neonPink"></i>
+                            <span>Fill Pop Anthems</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 5 Player Cards Grid -->
+                <div id="setupPlayersGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 mt-6">
+                    <!-- Populated dynamically via JS -->
+                </div>
+
+                <!-- Start Game Footer -->
+                <div class="mt-8 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="flex items-center gap-3 text-sm text-gray-400">
+                        <span id="songCountBadge" class="px-3 py-1 rounded-lg bg-neonPink/20 text-neonPink font-mono font-bold">0 / 20 Songs Ready</span>
+                        <span>Fill all 20 tracks or click <strong class="text-gray-200">Fill Demo Songs</strong> to jump in.</span>
+                    </div>
+                    <button id="startGameBtn" onclick="startDuelPhase()" class="w-full sm:w-auto btn-neon-primary px-8 py-4 rounded-2xl font-display font-bold text-white text-lg tracking-wide flex items-center justify-center gap-3">
+                        <span>Launch Duel Arena</span>
+                        <i class="fa-solid fa-bolt"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===================================================================== -->
+        <!-- PHASE 2: DUEL STAGE (Spin Wheel, Head-to-Head, 3-Judge Vote)          -->
+        <!-- ===================================================================== -->
+        <section id="phase-duel" class="hidden">
+            <!-- Top Scoreboard Strip -->
+            <div id="duelScoreboard" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+                <!-- Populated dynamically -->
+            </div>
+
+            <!-- Main Arena Layout: Wheel + Active Duel on Left (8 cols), History & Rules on Right (4 cols) -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                
+                <!-- Left/Center Stage -->
+                <div class="lg:col-span-8 flex flex-col gap-6">
+                    
+                    <!-- Wheel & Spin Controller Card -->
+                    <div id="wheelStageCard" class="glass-panel rounded-3xl p-6 sm:p-8 border border-white/10 relative overflow-hidden">
+                        <div class="flex flex-col md:flex-row items-center justify-between gap-8">
+                            
+                            <!-- Wheel Canvas Wrapper -->
+                            <div class="relative flex items-center justify-center w-full max-w-[320px] aspect-square mx-auto">
+                                <!-- Glowing ring behind wheel -->
+                                <div class="absolute inset-2 rounded-full bg-gradient-to-tr from-neonPink via-neonPurple to-neonCyan opacity-30 blur-xl"></div>
+                                
+                                <!-- Top Pointer -->
+                                <div class="absolute -top-3 left-1/2 -translate-x-1/2 z-20 wheel-pointer">
+                                    <svg width="36" height="40" viewBox="0 0 36 40" fill="none">
+                                        <path d="M18 40L2 8C2 4.68629 4.68629 2 8 2H28C31.3137 2 34 4.68629 34 8L18 40Z" fill="#ff2a85" stroke="#ffffff" stroke-width="2.5"/>
+                                    </svg>
+                                </div>
+
+                                <canvas id="duelWheelCanvas" class="w-full h-full rounded-full relative z-10 shadow-2xl"></canvas>
+
+                                <!-- Center Hub Button -->
+                                <button id="centerSpinBtn" onclick="spinDuelWheel()" class="absolute z-20 w-20 h-20 rounded-full bg-darkBg border-4 border-neonCyan text-white font-display font-extrabold text-sm tracking-wider uppercase shadow-[0_0_25px_rgba(0,240,255,0.6)] hover:scale-105 active:scale-95 transition-all flex flex-col items-center justify-center">
+                                    <i class="fa-solid fa-play text-neonCyan text-base mb-0.5"></i>
+                                    <span>SPIN</span>
+                                </button>
+                            </div>
+
+                            <!-- Wheel Status & Action Info -->
+                            <div class="flex-1 text-center md:text-left space-y-4">
+                                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-semibold text-neonCyan">
+                                    <i class="fa-solid fa-fire"></i>
+                                    <span id="duelRoundLabel">Round 1 • 20 Songs Remaining</span>
+                                </div>
+                                <h3 id="wheelInstructionTitle" class="font-display text-2xl sm:text-3xl font-bold text-white leading-tight">
+                                    Spin the Wheel to Pick 2 Competitors!
+                                </h3>
+                                <p id="wheelInstructionDesc" class="text-gray-400 text-sm leading-relaxed">
+                                    The wheel selects 2 distinct players who still have tracks in the pool. One random song from each player enters the ring, and the remaining 3 players vote!
+                                </p>
+
+                                <div class="pt-2 flex flex-wrap items-center justify-center md:justify-start gap-3">
+                                    <button id="spinWheelActionBtn" onclick="spinDuelWheel()" class="btn-neon-primary px-7 py-3.5 rounded-2xl font-display font-bold text-white text-base flex items-center gap-2.5">
+                                        <i class="fa-solid fa-dharmachakra"></i>
+                                        <span>Spin Wheel for Matchup</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Head-to-Head Battle & 3-Judge Voting Card (Revealed after wheel spin) -->
+                    <div id="activeBattleCard" class="hidden glass-panel rounded-3xl p-6 sm:p-8 border-2 border-neonCyan/40 animate-pulse-glow">
+                        <div class="flex flex-wrap items-center justify-between gap-2 pb-4 mb-6 border-b border-white/10">
+                            <div class="flex items-center gap-2">
+                                <span class="px-3 py-1 rounded-lg bg-neonPink text-white font-display font-bold text-xs uppercase tracking-wider">HEAD-TO-HEAD DUEL</span>
+                                <span id="blindIndicatorPill" class="px-2.5 py-1 rounded-lg bg-neonPurple/20 text-neonPurple border border-neonPurple/40 text-xs font-semibold">
+                                    <i class="fa-solid fa-mask mr-1"></i> Owners Hidden
+                                </span>
+                            </div>
+                            <span class="text-xs text-gray-400 font-medium">Both tracks will be deleted from pool after vote</span>
+                        </div>
+
+                        <!-- VS Track Cards -->
+                        <div class="grid grid-cols-1 md:grid-cols-11 gap-4 items-stretch">
+                            <!-- Track A -->
+                            <div class="md:col-span-5 rounded-2xl bg-gradient-to-b from-neonCyan/15 to-darkBg/90 border border-neonCyan/40 p-5 flex flex-col justify-between relative group">
+                                <div>
+                                    <div class="flex items-center justify-between gap-2 mb-3">
+                                        <span class="text-xs font-extrabold uppercase tracking-widest text-neonCyan">CONTENDER A</span>
+                                        <span id="trackAOwnerBadge" class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-white/10 text-gray-300">
+                                            ???
+                                        </span>
+                                    </div>
+                                    <h4 id="trackATitle" class="font-display text-xl sm:text-2xl font-bold text-white break-words leading-snug mb-4">
+                                        Song Title A
+                                    </h4>
+                                </div>
+
+                                <div class="space-y-2.5 pt-3 border-t border-white/10">
+                                    <div class="flex items-center gap-2">
+                                        <a id="trackAYoutubeLink" href="#" target="_blank" rel="noopener noreferrer" class="flex-1 py-2 px-3 rounded-xl bg-red-600/20 hover:bg-red-600/35 border border-red-500/40 text-red-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all">
+                                            <i class="fa-brands fa-youtube text-sm"></i> Play on YouTube
+                                        </a>
+                                        <a id="trackASpotifyLink" href="#" target="_blank" rel="noopener noreferrer" class="flex-1 py-2 px-3 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/35 border border-emerald-500/40 text-emerald-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all">
+                                            <i class="fa-brands fa-spotify text-sm"></i> Spotify
+                                        </a>
+                                    </div>
+                                    <div id="trackAVotesDisplay" class="text-center py-1.5 rounded-xl bg-neonCyan/10 text-neonCyan font-display font-bold text-sm">
+                                        0 / 3 Judge Votes
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- VS Divider -->
+                            <div class="md:col-span-1 flex items-center justify-center py-2">
+                                <div class="w-11 h-11 rounded-full bg-gradient-to-tr from-neonPink to-neonPurple flex items-center justify-center font-display font-black text-white text-sm shadow-lg shadow-neonPink/40">
+                                    VS
+                                </div>
+                            </div>
+
+                            <!-- Track B -->
+                            <div class="md:col-span-5 rounded-2xl bg-gradient-to-b from-neonPink/15 to-darkBg/90 border border-neonPink/40 p-5 flex flex-col justify-between relative group">
+                                <div>
+                                    <div class="flex items-center justify-between gap-2 mb-3">
+                                        <span class="text-xs font-extrabold uppercase tracking-widest text-neonPink">CONTENDER B</span>
+                                        <span id="trackBOwnerBadge" class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-white/10 text-gray-300">
+                                            ???
+                                        </span>
+                                    </div>
+                                    <h4 id="trackBTitle" class="font-display text-xl sm:text-2xl font-bold text-white break-words leading-snug mb-4">
+                                        Song Title B
+                                    </h4>
+                                </div>
+
+                                <div class="space-y-2.5 pt-3 border-t border-white/10">
+                                    <div class="flex items-center gap-2">
+                                        <a id="trackBYoutubeLink" href="#" target="_blank" rel="noopener noreferrer" class="flex-1 py-2 px-3 rounded-xl bg-red-600/20 hover:bg-red-600/35 border border-red-500/40 text-red-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all">
+                                            <i class="fa-brands fa-youtube text-sm"></i> Play on YouTube
+                                        </a>
+                                        <a id="trackBSpotifyLink" href="#" target="_blank" rel="noopener noreferrer" class="flex-1 py-2 px-3 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/35 border border-emerald-500/40 text-emerald-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all">
+                                            <i class="fa-brands fa-spotify text-sm"></i> Spotify
+                                        </a>
+                                    </div>
+                                    <div id="trackBVotesDisplay" class="text-center py-1.5 rounded-xl bg-neonPink/10 text-neonPink font-display font-bold text-sm">
+                                        0 / 3 Judge Votes
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3-Judge Voting Panel -->
+                        <div class="mt-6 pt-6 border-t border-white/10">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                                <div>
+                                    <h4 class="font-display font-bold text-white text-lg flex items-center gap-2">
+                                        <i class="fa-solid fa-gavel text-neonAmber"></i>
+                                        <span>3-Judge Panel Vote (Majority 2/3 Wins)</span>
+                                    </h4>
+                                    <p class="text-xs text-gray-400">The 3 non-competing players cast their votes below.</p>
+                                </div>
+                                <button id="revealOwnersBtn" onclick="toggleRevealDuringDuel()" class="text-xs px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 transition-all self-start sm:self-auto">
+                                    <i class="fa-solid fa-eye mr-1"></i> Peek Owners
+                                </button>
+                            </div>
+
+                            <!-- 3 Judge Rows -->
+                            <div id="judgesVotingContainer" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <!-- Populated dynamically with the 3 judging players -->
+                            </div>
+
+                            <!-- Confirm Result Button -->
+                            <div class="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 bg-darkBg/70 p-4 rounded-2xl border border-white/10">
+                                <div id="voteStatusSummary" class="text-sm font-medium text-gray-300">
+                                    Waiting for all 3 judges to cast their votes...
+                                </div>
+                                <button id="confirmDuelWinnerBtn" onclick="resolveDuelMatch()" disabled class="w-full sm:w-auto btn-neon-cyan px-6 py-3 rounded-xl font-display font-bold text-sm uppercase tracking-wider flex items-center justify-center gap-2">
+                                    <i class="fa-solid fa-trophy"></i>
+                                    <span>Lock Winner & Eliminate Both Songs</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Sidebar: Match History & Pool Status -->
+                <aside class="lg:col-span-4 space-y-6">
+                    <!-- Remaining Pool Breakdown -->
+                    <div class="glass-panel rounded-3xl p-5 border border-white/10">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="font-display font-bold text-white text-base flex items-center gap-2">
+                                <i class="fa-solid fa-layer-group text-neonCyan"></i>
+                                <span>Active Song Pool</span>
+                            </h3>
+                            <span id="poolRemainingPill" class="px-2.5 py-0.5 rounded-full bg-neonCyan/15 text-neonCyan font-mono text-xs font-bold">20 left</span>
+                        </div>
+                        <div id="poolStatusList" class="space-y-2.5 text-sm">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Battle Log History -->
+                    <div class="glass-panel rounded-3xl p-5 border border-white/10">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="font-display font-bold text-white text-base flex items-center gap-2">
+                                <i class="fa-solid fa-clock-rotate-left text-neonPink"></i>
+                                <span>Elimination Log</span>
+                            </h3>
+                            <span id="matchesPlayedPill" class="text-xs text-gray-400 font-medium">0 Duels</span>
+                        </div>
+                        <div id="matchHistoryFeed" class="space-y-3 max-h-[340px] overflow-y-auto pr-1">
+                            <div class="text-center py-8 text-gray-500 text-xs">
+                                <i class="fa-solid fa-music text-2xl mb-2 block opacity-40"></i>
+                                No battles fought yet.<br>Spin the wheel to start the clash!
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+
+            <!-- Dedicated Live Player & Song Leaderboard Panel inside Duel Arena -->
+            <div id="duelLiveLeaderboardsSection" class="mt-8 glass-panel rounded-3xl p-6 sm:p-8 border border-pink-500/25">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 mb-6 border-b border-white/10">
+                    <div>
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neonAmber/15 border border-neonAmber/35 text-neonAmber text-xs font-bold uppercase tracking-wider mb-1.5">
+                            <i class="fa-solid fa-ranking-star"></i> Live Tournament Standings
+                        </div>
+                        <h3 class="font-display text-xl sm:text-2xl font-bold text-white">Player & Song Leaderboards</h3>
+                    </div>
+
+                    <!-- Switcher Tabs: Players vs Songs -->
+                    <div class="flex items-center gap-2 bg-darkBg/90 p-1.5 rounded-2xl border border-white/10 self-start sm:self-auto">
+                        <button id="lbTabPlayers" onclick="switchLeaderboardTab('players')" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-neonPink text-white shadow-lg shadow-neonPink/30 transition-all flex items-center gap-2">
+                            <i class="fa-solid fa-users"></i>
+                            <span>Player Standings</span>
+                        </button>
+                        <button id="lbTabSongs" onclick="switchLeaderboardTab('songs')" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold text-gray-400 hover:text-white transition-all flex items-center gap-2">
+                            <i class="fa-solid fa-music"></i>
+                            <span>Song Leaderboard</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tab 1: Live Player Leaderboard Table -->
+                <div id="lbPanelPlayers" class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-white/10 text-[11px] uppercase tracking-wider text-gray-400">
+                                <th class="py-3 px-3">Rank</th>
+                                <th class="py-3 px-3">Player</th>
+                                <th class="py-3 px-3 text-center">Wins (X/4)</th>
+                                <th class="py-3 px-3 text-center">Win Rate</th>
+                                <th class="py-3 px-3 text-center">Songs Left</th>
+                                <th class="py-3 px-3 text-right">Earned Finale Picks</th>
+                            </tr>
+                        </thead>
+                        <tbody id="playerLeaderboardBody" class="divide-y divide-white/5 text-sm">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Tab 2: Live Song Leaderboard & Filterable Match Tracker -->
+                <div id="lbPanelSongs" class="hidden space-y-4">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <button onclick="setSongLeaderboardFilter('all')" id="songFilter-all" class="song-filter-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-neonCyan text-darkBg transition-all">All Competed</button>
+                            <button onclick="setSongLeaderboardFilter('winners')" id="songFilter-winners" class="song-filter-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 transition-all">Winners Only</button>
+                            <button onclick="setSongLeaderboardFilter('pool')" id="songFilter-pool" class="song-filter-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 transition-all">Still In Pool</button>
+                        </div>
+                        <select id="songPlayerFilterSelect" onchange="setSongLeaderboardPlayerFilter(this.value)" class="px-3 py-1.5 rounded-xl bg-darkBg border border-white/15 text-xs text-white focus:outline-none focus:border-neonPink">
+                            <option value="all">Filter by Player: All 5 Players</option>
+                        </select>
+                    </div>
+
+                    <div class="overflow-x-auto max-h-[380px] overflow-y-auto pr-1">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-white/10 text-[11px] uppercase tracking-wider text-gray-400">
+                                    <th class="py-3 px-3">Song Title</th>
+                                    <th class="py-3 px-3">Submitted By</th>
+                                    <th class="py-3 px-3">Duel Opponent</th>
+                                    <th class="py-3 px-3 text-center">Judge Score</th>
+                                    <th class="py-3 px-3 text-center">Status</th>
+                                    <th class="py-3 px-3 text-right">Listen</th>
+                                </tr>
+                            </thead>
+                            <tbody id="songLeaderboardBody" class="divide-y divide-white/5 text-xs sm:text-sm">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===================================================================== -->
+        <!-- PHASE 3: FINALE, REWARD DRAFT & FINAL PLAYLIST WHEEL                  -->
+        <!-- ===================================================================== -->
+        <section id="phase-finale" class="hidden animate-pop-in space-y-6">
+            
+            <!-- Finale Banner & Leaderboard -->
+            <div class="glass-panel rounded-3xl p-6 sm:p-8 border border-neonAmber/30 relative overflow-hidden">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-white/10">
+                    <div>
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neonAmber/15 border border-neonAmber/40 text-neonAmber text-xs font-bold uppercase tracking-wider mb-2">
+                            <i class="fa-solid fa-crown"></i> Duel Pool Exhausted • Reward Draft Unlocked
+                        </div>
+                        <h2 class="font-display text-2xl sm:text-3xl font-bold text-white">Final Standings & Song Pick Earnings</h2>
+                        <p class="text-gray-400 text-sm mt-1">
+                            Every duel win (<span class="text-white font-semibold">X / 4</span>) earns you <span class="text-neonCyan font-semibold">1 bonus song pick</span> for the Ultimate Group Playlist!
+                        </p>
+                    </div>
+                    <div class="px-4 py-3 rounded-2xl bg-darkBg/90 border border-white/10 text-right">
+                        <div class="text-xs text-gray-400 uppercase tracking-wider">Total Earned Picks</div>
+                        <div id="totalEarnedPicksDisplay" class="font-display text-2xl font-extrabold text-neonCyan">0 Songs</div>
+                    </div>
+                </div>
+
+                <!-- 5-Player Standings & Picks Earned Cards -->
+                <div id="finaleLeaderboardGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mt-6">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <!-- Step 3A: Reward Draft Submission Form -->
+            <div id="rewardDraftSubmissionCard" class="glass-panel rounded-3xl p-6 sm:p-8 border border-white/10">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <h3 class="font-display text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
+                            <span class="w-8 h-8 rounded-xl bg-neonPink/20 text-neonPink flex items-center justify-center text-sm font-black">A</span>
+                            <span>Draft Your Reward Songs</span>
+                        </h3>
+                        <p class="text-gray-400 text-sm mt-1">Winners enter new tracks equal to their wins. Once submitted, we spin the wheel to randomize the playback queue!</p>
+                    </div>
+                    <button type="button" onclick="fillDemoRewardSongs()" class="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-neonCyan text-xs font-semibold flex items-center gap-2 self-start sm:self-auto transition-all">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Auto-Fill Bonus Tracks
+                    </button>
+                </div>
+
+                <div id="rewardDraftInputsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <!-- Populated dynamically per player's wins -->
+                </div>
+
+                <div class="mt-8 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <p class="text-xs text-gray-400">
+                        <i class="fa-solid fa-circle-info text-neonCyan mr-1"></i>
+                        Players with 0 wins sit back and enjoy the winning curation!
+                    </p>
+                    <button onclick="lockRewardPlaylist()" class="w-full sm:w-auto btn-neon-primary px-8 py-4 rounded-2xl font-display font-bold text-white text-base flex items-center justify-center gap-2.5">
+                        <span>Lock Playlist & Open Final Wheel</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 3B: Final Playlist Playback Order Wheel -->
+            <div id="finalPlaylistWheelSection" class="hidden glass-panel rounded-3xl p-6 sm:p-8 border-2 border-neonCyan/40 animate-pop-in">
+                <div class="flex flex-col lg:flex-row items-center gap-8">
+                    
+                    <!-- Wheel Column -->
+                    <div class="w-full lg:w-5/12 flex flex-col items-center">
+                        <div class="relative flex items-center justify-center w-full max-w-[330px] aspect-square">
+                            <div class="absolute inset-2 rounded-full bg-gradient-to-tr from-neonCyan via-neonPurple to-neonPink opacity-30 blur-xl"></div>
+                            <div class="absolute -top-3 left-1/2 -translate-x-1/2 z-20 wheel-pointer">
+                                <svg width="36" height="40" viewBox="0 0 36 40" fill="none">
+                                    <path d="M18 40L2 8C2 4.68629 4.68629 2 8 2H28C31.3137 2 34 4.68629 34 8L18 40Z" fill="#00f0ff" stroke="#09090f" stroke-width="2.5"/>
+                                </svg>
+                            </div>
+                            <canvas id="finalWheelCanvas" class="w-full h-full rounded-full relative z-10 shadow-2xl"></canvas>
+                            <button id="finalWheelCenterBtn" onclick="spinFinalPlaylistWheel()" class="absolute z-20 w-20 h-20 rounded-full bg-darkBg border-4 border-neonPink text-white font-display font-extrabold text-xs uppercase tracking-wider shadow-[0_0_25px_rgba(255,42,133,0.6)] hover:scale-105 active:scale-95 transition-all flex flex-col items-center justify-center">
+                                <i class="fa-solid fa-shuffle text-neonPink text-base mb-0.5"></i>
+                                <span>QUEUE</span>
+                            </button>
+                        </div>
+
+                        <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
+                            <button id="spinFinalWheelBtn" onclick="spinFinalPlaylistWheel()" class="btn-neon-cyan px-6 py-3.5 rounded-2xl font-display font-bold text-sm uppercase tracking-wider flex items-center gap-2">
+                                <i class="fa-solid fa-dharmachakra"></i>
+                                <span>Spin Next Track Order</span>
+                            </button>
+                            <button id="spinAllRemainingBtn" onclick="autoQueueRemainingTracks()" class="px-4 py-3.5 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 text-gray-200 text-xs font-semibold transition-all">
+                                Instant Shuffle All
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Queue Column -->
+                    <div class="w-full lg:w-7/12 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <span class="text-xs font-bold uppercase tracking-widest text-neonCyan">ULTIMATE GROUP PLAYLIST</span>
+                                <h3 class="font-display text-2xl font-bold text-white">Official Playback Queue</h3>
+                            </div>
+                            <button onclick="copyPlaylistToClipboard()" class="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-xs font-semibold text-white flex items-center gap-2 transition-all">
+                                <i class="fa-regular fa-copy text-neonCyan"></i>
+                                <span>Copy Setlist</span>
+                            </button>
+                        </div>
+
+                        <div id="finalQueueList" class="space-y-2.5 max-h-[400px] overflow-y-auto pr-1">
+                            <!-- Queued tracks appear here one by one -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Finale Full Song & Player Recap Leaderboard -->
+            <div class="glass-panel rounded-3xl p-6 sm:p-8 border border-pink-500/20">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-widest text-neonPink">TOURNAMENT ARCHIVE</span>
+                        <h3 class="font-display text-xl sm:text-2xl font-bold text-white">Complete 20-Song Battle Recap</h3>
+                    </div>
+                    <span class="text-xs text-gray-400">Every track from the initial pool & its duel outcome</span>
+                </div>
+                <div class="overflow-x-auto max-h-[360px] overflow-y-auto pr-1">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-white/10 text-[11px] uppercase tracking-wider text-gray-400">
+                                <th class="py-3 px-3">Song Title</th>
+                                <th class="py-3 px-3">Player</th>
+                                <th class="py-3 px-3">Opponent Song</th>
+                                <th class="py-3 px-3 text-center">Vote Score</th>
+                                <th class="py-3 px-3 text-center">Outcome</th>
+                                <th class="py-3 px-3 text-right">Replay</th>
+                            </tr>
+                        </thead>
+                        <tbody id="finaleSongRecapBody" class="divide-y divide-white/5 text-xs sm:text-sm">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Leaderboard Quick-View Modal (Accessible anytime via Header Button) -->
+    <div id="leaderboardModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 backdrop-blur-md p-4">
+        <div class="glass-panel max-w-4xl w-full rounded-3xl p-6 border border-pink-500/30 animate-pop-in max-h-[88vh] flex flex-col">
+            <div class="flex items-center justify-between pb-4 mb-4 border-b border-white/10 shrink-0">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-neonAmber/20 text-neonAmber flex items-center justify-center">
+                        <i class="fa-solid fa-ranking-star"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-display text-xl font-bold text-white">Live Tournament Leaderboards</h3>
+                        <p class="text-xs text-gray-400">Real-time player rankings & song battle outcomes</p>
+                    </div>
+                </div>
+                <button onclick="toggleLeaderboardModal()" class="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-gray-300 flex items-center justify-center transition-all">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div id="modalLeaderboardContent" class="overflow-y-auto space-y-6 pr-1">
+                <!-- Populated dynamically when opened -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Confirmation Modal (Replaces window.confirm) -->
+    <div id="resetModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+        <div class="glass-panel max-w-md w-full rounded-3xl p-6 border border-white/15 animate-pop-in">
+            <div class="w-12 h-12 rounded-2xl bg-red-500/20 text-red-400 flex items-center justify-center text-xl mb-4">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3 class="font-display text-xl font-bold text-white mb-2">Restart Entire Game?</h3>
+            <p class="text-gray-400 text-sm mb-6">
+                This will clear all current scores, match history, and playlists, returning you to the 5-player setup screen.
+            </p>
+            <div class="flex items-center justify-end gap-3">
+                <button onclick="closeResetModal()" class="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-gray-200 text-sm font-semibold transition-all">
+                    Cancel
+                </button>
+                <button onclick="confirmResetGame()" class="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-sm font-bold shadow-lg shadow-red-600/30 transition-all">
+                    Yes, Reset Game
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Duel Winner Celebration Banner Overlay -->
+    <div id="winnerBannerOverlay" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 backdrop-blur-sm p-4 pointer-events-none">
+        <div class="glass-panel max-w-md w-full rounded-3xl p-7 border-2 border-neonLime text-center shadow-[0_0_50px_rgba(57,255,20,0.35)] animate-pop-in">
+            <div class="w-16 h-16 rounded-full bg-neonLime/20 text-neonLime flex items-center justify-center text-3xl mx-auto mb-3">
+                <i class="fa-solid fa-trophy"></i>
+            </div>
+            <div class="text-xs font-extrabold uppercase tracking-widest text-neonLime mb-1">DUEL WINNER</div>
+            <h3 id="winnerBannerPlayer" class="font-display text-3xl font-black text-white mb-1">Player Name</h3>
+            <p id="winnerBannerSong" class="text-neonCyan font-semibold text-base mb-3">"Winning Song Title"</p>
+            <p class="text-xs text-gray-400">Both duel tracks removed from pool • +1 Win Point awarded</p>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * ============================================================================
+         * SOUNDCLASH 5 - STATE & GAME ENGINE
+         * ============================================================================
+         */
+        const PLAYER_COLORS = [
+            { hex: '#00f0ff', name: 'Cyan', bg: 'bg-cyan-500/15', border: 'border-cyan-400/40', text: 'text-cyan-300' },
+            { hex: '#ff2a85', name: 'Pink', bg: 'bg-pink-500/15', border: 'border-pink-400/40', text: 'text-pink-300' },
+            { hex: '#9d4edd', name: 'Purple', bg: 'bg-purple-500/15', border: 'border-purple-400/40', text: 'text-purple-300' },
+            { hex: '#39ff14', name: 'Lime', bg: 'bg-lime-500/15', border: 'border-lime-400/40', text: 'text-lime-300' },
+            { hex: '#ffb703', name: 'Amber', bg: 'bg-amber-500/15', border: 'border-amber-400/40', text: 'text-amber-300' }
+        ];
+
+        const DEMO_PLAYERS = [
+            {
+                name: 'Chloe',
+                songs: [
+                    'Carly Rae Jepsen - Call Me Maybe',
+                    'Taylor Swift - Cruel Summer',
+                    'Sabrina Carpenter - Espresso',
+                    'Natasha Bedingfield - Unwritten'
+                ],
+                bonus: ['Carly Rae Jepsen - Run Away With Me', 'Taylor Swift - Style', 'Olivia Rodrigo - good 4 u', 'Dua Lipa - Don\'t Start Now']
+            },
+            {
+                name: 'Madison',
+                songs: [
+                    'Katy Perry - Teenage Dream',
+                    'Kesha - TiK ToK',
+                    'Miley Cyrus - Party in the U.S.A.',
+                    'Katy Perry - Last Friday Night (T.G.I.F.)'
+                ],
+                bonus: ['Katy Perry - California Gurls', 'Avril Lavigne - Girlfriend', 'P!nk - So What', 'Kelly Clarkson - Since U Been Gone']
+            },
+            {
+                name: 'Brittany',
+                songs: [
+                    'Lady Gaga - Bad Romance',
+                    'Britney Spears - Toxic',
+                    'Chappell Roan - Pink Pony Club',
+                    'Gwen Stefani - Hollaback Girl'
+                ],
+                bonus: ['Lady Gaga - Just Dance', 'Britney Spears - Gimme More', 'Christina Aguilera - Genie in a Bottle', 'Fergie - Glamorous']
+            },
+            {
+                name: 'hailey',
+                songs: [
+                    'Rihanna - We Found Love',
+                    'Cascada - Everytime We Touch',
+                    'Pitbull ft. Ne-Yo - Give Me Everything',
+                    'Flo Rida - Low'
+                ],
+                bonus: ['Rihanna - Only Girl (In The World)', 'Usher - DJ Got Us Fallin\' in Love', 'Taio Cruz - Dynamite', 'LMFAO - Party Rock Anthem']
+            },
+            {
+                name: 'Savannah',
+                songs: [
+                    'Ariana Grande - Into You',
+                    'Whitney Houston - I Wanna Dance with Somebody',
+                    'ABBA - Dancing Queen',
+                    'Paramore - Still Into You'
+                ],
+                bonus: ['Ariana Grande - thank u, next', 'Mariah Carey - Fantasy', 'Spice Girls - Wannabe', 'Céline Dion - It\'s All Coming Back to Me Now']
+            }
+        ];
+
+        // Global Game State
+        let gameState = {
+            phase: 'setup', // 'setup' | 'duel' | 'finale'
+            blindMode: true,
+            players: [], // { id, name, color, initialSongs: [], remainingSongs: [], wins: 0, matchesPlayed: 0 }
+            songRecords: {}, // songId -> { id, title, ownerId, ownerName, ownerColor, status: 'in_pool'|'won'|'lost', opponentTitle, opponentOwner, voteScore, round }
+            duelHistory: [],
+            currentDuel: null, // { playerA, playerB, songA, songB, judges: [], votes: { judgeId: 'A' | 'B' }, peekRevealed: false }
+            duelWheelAngle: 0,
+            isSpinning: false,
+            activeLbTab: 'players',
+            songLbFilter: 'all',
+            songLbPlayerFilter: 'all',
+            // Finale State
+            unscheduledFinalTracks: [], // { id, title, ownerName, colorHex }
+            scheduledFinalQueue: [],
+            finalWheelAngle: 0
+        };
+
+        /**
+         * ============================================================================
+         * ANIMATED GLOSSY Y2K / 2010s POP CONCERT STAGE BACKGROUND VISUALIZER
+         * ============================================================================
+         */
+        let bgBeatPulse = 0; // Incremented on every 124 BPM beat tick
+
+        function initPartyBackgroundVisualizer() {
+            const canvas = document.getElementById('partyBgCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+
+            let width = canvas.width = window.innerWidth;
+            let height = canvas.height = window.innerHeight;
+
+            window.addEventListener('resize', () => {
+                width = canvas.width = window.innerWidth;
+                height = canvas.height = window.innerHeight;
+            });
+
+            // Floating glitter sparkles & disco bokeh orbs
+            const palette = ['#ff2a85', '#ff70a6', '#c77dff', '#00f0ff', '#ffd166'];
+            const particles = Array.from({ length: 65 }, () => ({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                r: 1.5 + Math.random() * 4.5,
+                vx: (Math.random() - 0.5) * 0.45,
+                vy: -0.25 - Math.random() * 0.65,
+                color: palette[Math.floor(Math.random() * palette.length)],
+                alpha: 0.25 + Math.random() * 0.6,
+                twinklePhase: Math.random() * Math.PI * 2,
+                isStar: Math.random() > 0.65
+            }));
+
+            let time = 0;
+
+            function drawStar(cx, cy, spikes, outerR, innerR, color, alpha) {
+                let rot = (Math.PI / 2) * 3;
+                let step = Math.PI / spikes;
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(cx, cy - outerR);
+                for (let i = 0; i < spikes; i++) {
+                    ctx.lineTo(cx + Math.cos(rot) * outerR, cy + Math.sin(rot) * outerR);
+                    rot += step;
+                    ctx.lineTo(cx + Math.cos(rot) * innerR, cy + Math.sin(rot) * innerR);
+                    rot += step;
+                }
+                ctx.closePath();
+                ctx.fillStyle = color;
+                ctx.globalAlpha = alpha;
+                ctx.fill();
+                ctx.restore();
+            }
+
+            function renderBgFrame() {
+                time += 0.016;
+                bgBeatPulse *= 0.91; // Smooth decay after each beat
+
+                // 1. Deep glossy magenta-violet club backdrop
+                const bgGrad = ctx.createLinearGradient(0, 0, width, height);
+                bgGrad.addColorStop(0, '#0c0518');
+                bgGrad.addColorStop(0.5, '#160829');
+                bgGrad.addColorStop(1, '#090919');
+                ctx.fillStyle = bgGrad;
+                ctx.fillRect(0, 0, width, height);
+
+                // 2. Sweeping Concert Stage Spotlights
+                const beams = [
+                    { originX: width * 0.15, angle: -0.35 + Math.sin(time * 0.7) * 0.28, color: 'rgba(255, 42, 133, 0.13)' },
+                    { originX: width * 0.85, angle: 0.35 + Math.cos(time * 0.65) * 0.28, color: 'rgba(0, 240, 255, 0.11)' },
+                    { originX: width * 0.5, angle: Math.sin(time * 0.45) * 0.35, color: 'rgba(199, 125, 255, 0.10)' }
+                ];
+
+                beams.forEach(beam => {
+                    ctx.save();
+                    ctx.translate(beam.originX, -30);
+                    ctx.rotate(beam.angle);
+                    const beamGrad = ctx.createLinearGradient(0, 0, 0, height * 1.15);
+                    beamGrad.addColorStop(0, beam.color);
+                    beamGrad.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = beamGrad;
+                    ctx.beginPath();
+                    ctx.moveTo(-40, 0);
+                    ctx.lineTo(40, 0);
+                    ctx.lineTo(260, height * 1.15);
+                    ctx.lineTo(-260, height * 1.15);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.restore();
+                });
+
+                // 3. Pulsing Center Disco Beat Rings
+                const cx = width * 0.5;
+                const cy = height * 0.45;
+                const baseRadius = Math.min(width, height) * 0.22;
+                const pulseBoost = bgBeatPulse * 48;
+
+                for (let ring = 0; ring < 3; ring++) {
+                    const r = baseRadius + ring * 85 + pulseBoost * (1 - ring * 0.22);
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, Math.max(10, r), 0, Math.PI * 2);
+                    ctx.lineWidth = 2 + bgBeatPulse * 2;
+                    ctx.strokeStyle = ring === 0
+                        ? `rgba(255, 42, 133, ${0.14 + bgBeatPulse * 0.25})`
+                        : ring === 1
+                        ? `rgba(0, 240, 255, ${0.10 + bgBeatPulse * 0.2})`
+                        : `rgba(255, 209, 102, ${0.08 + bgBeatPulse * 0.15})`;
+                    ctx.stroke();
+                }
+
+                // 4. Floating Y2K Glitter Sparkles & Bokeh Lights
+                particles.forEach(p => {
+                    p.x += p.vx;
+                    p.y += p.vy - bgBeatPulse * 0.9;
+                    p.twinklePhase += 0.06;
+
+                    if (p.y < -15) {
+                        p.y = height + 15;
+                        p.x = Math.random() * width;
+                    }
+                    if (p.x < -15) p.x = width + 15;
+                    if (p.x > width + 15) p.x = -15;
+
+                    const twinkleAlpha = p.alpha * (0.55 + 0.45 * Math.sin(p.twinklePhase));
+                    const dynamicR = p.r * (1 + bgBeatPulse * 0.45);
+
+                    if (p.isStar) {
+                        drawStar(p.x, p.y, 4, dynamicR * 2.1, dynamicR * 0.65, p.color, twinkleAlpha);
+                    } else {
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, dynamicR, 0, Math.PI * 2);
+                        ctx.fillStyle = p.color;
+                        ctx.globalAlpha = twinkleAlpha;
+                        ctx.shadowBlur = 10;
+                        ctx.shadowColor = p.color;
+                        ctx.fill();
+                        ctx.restore();
+                    }
+                });
+
+                requestAnimationFrame(renderBgFrame);
+            }
+
+            requestAnimationFrame(renderBgFrame);
+        }
+
+        /**
+         * ============================================================================
+         * WEB AUDIO API: UI SFX + 124 BPM "WHITE GIRL POP" SYNTH GROOVE LOOP
+         * ============================================================================
+         */
+        let audioCtx = null;
+        let isMuted = false;
+
+        // Background 124 BPM Dance-Pop Beat Synthesizer State
+        let bgBeatPlaying = false;
+        let bgBeatTimer = null;
+        let bgBeatStep = 0;
+        let bgBeatGainNode = null;
+        let bgBeatVolumeVal = 0.45;
+
+        function initAudio() {
+            if (!audioCtx) {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (AudioContextClass) {
+                    audioCtx = new AudioContextClass();
+                }
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function updateBgBeatVolume(val) {
+            bgBeatVolumeVal = Number(val) / 100;
+            if (bgBeatGainNode && audioCtx) {
+                bgBeatGainNode.gain.setTargetAtTime(bgBeatVolumeVal * 0.35, audioCtx.currentTime, 0.03);
+            }
+        }
+
+        function toggleBgPopBeat() {
+            initAudio();
+            bgBeatPlaying = !bgBeatPlaying;
+            const btnText = document.getElementById('bgBeatText');
+            const btnIcon = document.getElementById('bgBeatIcon');
+
+            if (bgBeatPlaying) {
+                btnText.textContent = 'Pop Beat: On';
+                btnIcon.className = 'fa-solid fa-music fa-bounce text-neonCyan';
+                startPopGrooveLoop();
+                showToast('124 BPM Dance-Pop Groove playing! Lower slider when previewing duel songs.', 'info');
+            } else {
+                btnText.textContent = 'Pop Beat: Off';
+                btnIcon.className = 'fa-solid fa-music text-neonPink';
+                stopPopGrooveLoop();
+            }
+        }
+
+        function startPopGrooveLoop() {
+            if (bgBeatTimer) clearInterval(bgBeatTimer);
+            initAudio();
+            if (!audioCtx) return;
+
+            if (!bgBeatGainNode) {
+                bgBeatGainNode = audioCtx.createGain();
+                bgBeatGainNode.connect(audioCtx.destination);
+            }
+            bgBeatGainNode.gain.setValueAtTime(bgBeatVolumeVal * 0.35, audioCtx.currentTime);
+
+            // 124 BPM -> 16th note step = (60 / 124 / 4) * 1000 = ~120.97ms
+            const stepMs = (60 / 124 / 4) * 1000;
+            bgBeatStep = 0;
+
+            // Catchy 2010s Pop Progression (VI - IV - I - V in C Major: Am - F - C - G)
+            const chordProgression = [
+                [220.00, 261.63, 329.63], // Am (A3, C4, E4)
+                [174.61, 220.00, 261.63], // F  (F3, A3, C4)
+                [261.63, 329.63, 392.00], // C  (C4, E4, G4)
+                [196.00, 246.94, 293.66]  // G  (G3, B3, D4)
+            ];
+            const bassRoots = [110.00, 87.31, 130.81, 98.00]; // A2, F2, C3, G2
+
+            bgBeatTimer = setInterval(() => {
+                if (!bgBeatPlaying || !audioCtx) return;
+                const now = audioCtx.currentTime;
+                const stepInBar = bgBeatStep % 16;
+                const barIndex = Math.floor(bgBeatStep / 16) % 4;
+
+                // 1. Four-on-the-Floor Punchy Pop Kick (Steps 0, 4, 8, 12)
+                if (stepInBar % 4 === 0) {
+                    bgBeatPulse = 1.0; // Trigger background visualizer pulse!
+                    const kickOsc = audioCtx.createOscillator();
+                    const kickGain = audioCtx.createGain();
+                    kickOsc.type = 'sine';
+                    kickOsc.frequency.setValueAtTime(145, now);
+                    kickOsc.frequency.exponentialRampToValueAtTime(42, now + 0.14);
+                    kickGain.gain.setValueAtTime(0.75, now);
+                    kickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+                    kickOsc.connect(kickGain);
+                    kickGain.connect(bgBeatGainNode);
+                    kickOsc.start(now);
+                    kickOsc.stop(now + 0.17);
+                }
+
+                // 2. Crisp Dance-Pop Clap on Beats 2 & 4 (Steps 4, 12)
+                if (stepInBar === 4 || stepInBar === 12) {
+                    const bufferSize = audioCtx.sampleRate * 0.11;
+                    const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                    const output = noiseBuffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) {
+                        output[i] = Math.random() * 2 - 1;
+                    }
+                    const whiteNoise = audioCtx.createBufferSource();
+                    whiteNoise.buffer = noiseBuffer;
+
+                    const filter = audioCtx.createBiquadFilter();
+                    filter.type = 'bandpass';
+                    filter.frequency.setValueAtTime(1350, now);
+
+                    const clapGain = audioCtx.createGain();
+                    clapGain.gain.setValueAtTime(0.38, now);
+                    clapGain.gain.exponentialRampToValueAtTime(0.001, now + 0.11);
+
+                    whiteNoise.connect(filter);
+                    filter.connect(clapGain);
+                    clapGain.connect(bgBeatGainNode);
+                    whiteNoise.start(now);
+                }
+
+                // 3. Off-Beat Shimmering Open Hi-Hat (Steps 2, 6, 10, 14)
+                if (stepInBar % 4 === 2) {
+                    const hatLen = audioCtx.sampleRate * 0.05;
+                    const hatBuf = audioCtx.createBuffer(1, hatLen, audioCtx.sampleRate);
+                    const data = hatBuf.getChannelData(0);
+                    for (let i = 0; i < hatLen; i++) data[i] = Math.random() * 2 - 1;
+
+                    const hatSrc = audioCtx.createBufferSource();
+                    hatSrc.buffer = hatBuf;
+                    const hp = audioCtx.createBiquadFilter();
+                    hp.type = 'highpass';
+                    hp.frequency.setValueAtTime(7500, now);
+
+                    const hatGain = audioCtx.createGain();
+                    hatGain.gain.setValueAtTime(0.16, now);
+                    hatGain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+
+                    hatSrc.connect(hp);
+                    hp.connect(hatGain);
+                    hatGain.connect(bgBeatGainNode);
+                    hatSrc.start(now);
+                }
+
+                // 4. Bouncy Octave Synth Bassline (Off-beats)
+                if (stepInBar % 2 === 1) {
+                    const root = bassRoots[barIndex];
+                    const noteFreq = (stepInBar % 4 === 3) ? root * 2 : root;
+                    const bassOsc = audioCtx.createOscillator();
+                    const bassGain = audioCtx.createGain();
+                    bassOsc.type = 'sawtooth';
+                    bassOsc.frequency.setValueAtTime(noteFreq, now);
+
+                    const lp = audioCtx.createBiquadFilter();
+                    lp.type = 'lowpass';
+                    lp.frequency.setValueAtTime(620, now);
+
+                    bassGain.gain.setValueAtTime(0.24, now);
+                    bassGain.gain.exponentialRampToValueAtTime(0.001, now + 0.11);
+
+                    bassOsc.connect(lp);
+                    lp.connect(bassGain);
+                    bassGain.connect(bgBeatGainNode);
+                    bassOsc.start(now);
+                    bassOsc.stop(now + 0.12);
+                }
+
+                // 5. Glossy Super-Saw / Bell Pop Chords on Syncopated Rhythm (Steps 0, 3, 6, 10, 14)
+                if ([0, 3, 6, 10, 14].includes(stepInBar)) {
+                    const chord = chordProgression[barIndex];
+                    chord.forEach(freq => {
+                        const chordOsc = audioCtx.createOscillator();
+                        const chordGain = audioCtx.createGain();
+                        chordOsc.type = 'triangle';
+                        chordOsc.frequency.setValueAtTime(freq, now);
+                        chordGain.gain.setValueAtTime(0.09, now);
+                        chordGain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+                        chordOsc.connect(chordGain);
+                        chordGain.connect(bgBeatGainNode);
+                        chordOsc.start(now);
+                        chordOsc.stop(now + 0.23);
+                    });
+                }
+
+                bgBeatStep++;
+            }, stepMs);
+        }
+
+        function stopPopGrooveLoop() {
+            if (bgBeatTimer) {
+                clearInterval(bgBeatTimer);
+                bgBeatTimer = null;
+            }
+        }
+
+        function toggleAudio() {
+            isMuted = !isMuted;
+            const icon = document.getElementById('muteIcon');
+            const text = document.getElementById('muteText');
+            if (isMuted) {
+                icon.className = 'fa-solid fa-volume-xmark text-red-400';
+                text.textContent = 'Muted';
+            } else {
+                icon.className = 'fa-solid fa-volume-high';
+                text.textContent = 'SFX On';
+                playClick();
+            }
+        }
+
+        function playClick() {
+            if (isMuted) return;
+            try {
+                initAudio();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(520, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(280, audioCtx.currentTime + 0.06);
+                gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.06);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.065);
+            } catch (e) {}
+        }
+
+        function playWheelTick(pitchMultiplier = 1) {
+            if (isMuted) return;
+            try {
+                initAudio();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(600 * pitchMultiplier, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(180, audioCtx.currentTime + 0.035);
+                gain.gain.setValueAtTime(0.14, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.035);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.04);
+            } catch (e) {}
+        }
+
+        function playFanfare() {
+            if (isMuted) return;
+            try {
+                initAudio();
+                const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+                notes.forEach((freq, idx) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    const start = audioCtx.currentTime + idx * 0.09;
+                    osc.frequency.setValueAtTime(freq, start);
+                    gain.gain.setValueAtTime(0.16, start);
+                    gain.gain.exponentialRampToValueAtTime(0.001, start + 0.35);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(start);
+                    osc.stop(start + 0.36);
+                });
+            } catch (e) {}
+        }
+
+        /**
+         * ============================================================================
+         * TOAST NOTIFICATIONS (Safe replacement for alert())
+         * ============================================================================
+         */
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            
+            const styles = {
+                info: 'border-neonCyan/50 bg-cardBg/95 text-white',
+                error: 'border-red-500/60 bg-red-950/90 text-red-100',
+                success: 'border-neonLime/60 bg-cardBg/95 text-neonLime'
+            };
+            const icons = {
+                info: 'fa-circle-info text-neonCyan',
+                error: 'fa-circle-exclamation text-red-400',
+                success: 'fa-circle-check text-neonLime'
+            };
+
+            toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-2xl border shadow-2xl backdrop-blur-md text-sm font-medium animate-pop-in ${styles[type] || styles.info}`;
+            toast.innerHTML = `
+                <i class="fa-solid ${icons[type] || icons.info} text-base shrink-0"></i>
+                <span class="flex-1">${escapeHtml(message)}</span>
+            `;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(-8px)';
+                toast.style.transition = 'all 0.25s ease';
+                setTimeout(() => toast.remove(), 260);
+            }, 3400);
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        /**
+         * ============================================================================
+         * PHASE 1: SETUP INITIALIZATION & VALIDATION
+         * ============================================================================
+         */
+        function renderSetupCards() {
+            const grid = document.getElementById('setupPlayersGrid');
+            grid.innerHTML = '';
+
+            for (let pIdx = 0; pIdx < 5; pIdx++) {
+                const color = PLAYER_COLORS[pIdx];
+                const card = document.createElement('div');
+                card.className = `rounded-2xl bg-darkBg/80 border ${color.border} p-4 flex flex-col gap-3 transition-all hover:border-opacity-80`;
+
+                let songInputsHtml = '';
+                for (let sIdx = 0; sIdx < 4; sIdx++) {
+                    songInputsHtml += `
+                        <div class="relative">
+                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] font-mono font-bold text-gray-500">${sIdx + 1}.</span>
+                            <input 
+                                type="text" 
+                                id="player_${pIdx}_song_${sIdx}" 
+                                oninput="updateSetupSongCounter()"
+                                placeholder="Artist - Song Title"
+                                class="w-full pl-7 pr-3 py-2 rounded-xl bg-white/5 border border-white/10 focus:border-neonCyan focus:bg-white/10 focus:outline-none text-xs text-white placeholder-gray-600 transition-all"
+                            >
+                        </div>
+                    `;
+                }
+
+                card.innerHTML = `
+                    <div class="flex items-center gap-2.5 pb-2 border-b border-white/10">
+                        <span class="w-3.5 h-3.5 rounded-full shrink-0" style="background-color: ${color.hex}; box-shadow: 0 0 10px ${color.hex};"></span>
+                        <input 
+                            type="text" 
+                            id="player_${pIdx}_name" 
+                            value="Player ${pIdx + 1}"
+                            placeholder="Player ${pIdx + 1} Name"
+                            class="w-full bg-transparent font-display font-bold text-base text-white focus:outline-none focus:text-neonCyan transition-colors"
+                        >
+                    </div>
+                    <div class="space-y-2">
+                        ${songInputsHtml}
+                    </div>
+                `;
+                grid.appendChild(card);
+            }
+            updateSetupSongCounter();
+        }
+
+        function updateSetupSongCounter() {
+            let count = 0;
+            for (let p = 0; p < 5; p++) {
+                for (let s = 0; s < 4; s++) {
+                    const val = document.getElementById(`player_${p}_song_${s}`)?.value.trim();
+                    if (val) count++;
+                }
+            }
+            const badge = document.getElementById('songCountBadge');
+            badge.textContent = `${count} / 20 Songs Ready`;
+            if (count === 20) {
+                badge.className = 'px-3 py-1 rounded-lg bg-neonLime/20 text-neonLime font-mono font-bold';
+            } else {
+                badge.className = 'px-3 py-1 rounded-lg bg-neonPink/20 text-neonPink font-mono font-bold';
+            }
+        }
+
+        function fillDemoData() {
+            playClick();
+            for (let p = 0; p < 5; p++) {
+                document.getElementById(`player_${p}_name`).value = DEMO_PLAYERS[p].name;
+                for (let s = 0; s < 4; s++) {
+                    document.getElementById(`player_${p}_song_${s}`).value = DEMO_PLAYERS[p].songs[s];
+                }
+            }
+            updateSetupSongCounter();
+            showToast('Loaded 5 players & 20 iconic White Girl Music pop anthems!', 'success');
+        }
+
+        function startDuelPhase() {
+            playClick();
+            const players = [];
+            const nameSet = new Set();
+            const songRecords = {};
+
+            for (let p = 0; p < 5; p++) {
+                const rawName = document.getElementById(`player_${p}_name`).value.trim();
+                if (!rawName) {
+                    showToast(`Please enter a name for Player ${p + 1}.`, 'error');
+                    return;
+                }
+                if (nameSet.has(rawName.toLowerCase())) {
+                    showToast(`Duplicate player name "${rawName}". Make all 5 names unique!`, 'error');
+                    return;
+                }
+                nameSet.add(rawName.toLowerCase());
+
+                const songs = [];
+                for (let s = 0; s < 4; s++) {
+                    const songTitle = document.getElementById(`player_${p}_song_${s}`).value.trim();
+                    if (!songTitle) {
+                        showToast(`${rawName} needs all 4 songs filled in (missing song #${s + 1}).`, 'error');
+                        return;
+                    }
+                    const songId = `p${p}_s${s}_${Date.now()}_${s}`;
+                    const songObj = {
+                        id: songId,
+                        title: songTitle,
+                        ownerId: p
+                    };
+                    songs.push(songObj);
+
+                    songRecords[songId] = {
+                        id: songId,
+                        title: songTitle,
+                        ownerId: p,
+                        ownerName: rawName,
+                        ownerColor: PLAYER_COLORS[p].hex,
+                        status: 'in_pool',
+                        opponentTitle: null,
+                        opponentOwner: null,
+                        voteScore: null,
+                        round: null
+                    };
+                }
+
+                players.push({
+                    id: p,
+                    name: rawName,
+                    color: PLAYER_COLORS[p],
+                    initialSongs: [...songs],
+                    remainingSongs: [...songs],
+                    wins: 0,
+                    matchesPlayed: 0
+                });
+            }
+
+            gameState.players = players;
+            gameState.songRecords = songRecords;
+            gameState.blindMode = document.getElementById('blindModeToggle').checked;
+            gameState.duelHistory = [];
+            gameState.currentDuel = null;
+            gameState.phase = 'duel';
+
+            // Populate Player filter dropdown in Song Leaderboard
+            const playerFilterSel = document.getElementById('songPlayerFilterSelect');
+            if (playerFilterSel) {
+                playerFilterSel.innerHTML = `<option value="all">Filter by Player: All 5 Players</option>` +
+                    players.map(pl => `<option value="${pl.id}">${escapeHtml(pl.name)}</option>`).join('');
+            }
+
+            switchPhaseUI('duel');
+            updateDuelUI();
+            drawDuelWheel();
+            showToast('Arena ready! Spin the wheel to select 2 competitors.', 'info');
+        }
+
+        /**
+         * ============================================================================
+         * PHASE SWITCHER & NAVIGATION PILLS
+         * ============================================================================
+         */
+        function switchPhaseUI(targetPhase) {
+            document.getElementById('phase-setup').classList.add('hidden');
+            document.getElementById('phase-duel').classList.add('hidden');
+            document.getElementById('phase-finale').classList.add('hidden');
+
+            document.getElementById(`phase-${targetPhase}`).classList.remove('hidden');
+
+            const phaseOrder = { setup: 1, duel: 2, finale: 3 };
+            const currentIdx = phaseOrder[targetPhase];
+
+            for (let i = 1; i <= 3; i++) {
+                const pill = document.getElementById(`step-badge-${i}`);
+                const circle = pill.querySelector('span');
+                if (i === currentIdx) {
+                    pill.className = 'phase-pill px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-1.5 bg-neonPink/20 text-neonPink border border-neonPink/40 transition-all';
+                    circle.className = 'w-5 h-5 rounded-full bg-neonPink text-white text-[11px] flex items-center justify-center font-bold';
+                } else if (i < currentIdx) {
+                    pill.className = 'phase-pill px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-1.5 bg-neonCyan/15 text-neonCyan border border-neonCyan/30 transition-all';
+                    circle.className = 'w-5 h-5 rounded-full bg-neonCyan text-darkBg text-[11px] flex items-center justify-center font-bold';
+                } else {
+                    pill.className = 'phase-pill px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-1.5 text-gray-500 transition-all';
+                    circle.className = 'w-5 h-5 rounded-full bg-gray-800 text-gray-400 text-[11px] flex items-center justify-center font-bold';
+                }
+            }
+        }
+
+        /**
+         * ============================================================================
+         * PHASE 2: DUEL STAGE & CANVAS SPINNING WHEEL
+         * ============================================================================
+         */
+        function getEligiblePlayers() {
+            return gameState.players.filter(p => p.remainingSongs.length > 0);
+        }
+
+        function getTotalRemainingSongs() {
+            return gameState.players.reduce((sum, p) => sum + p.remainingSongs.length, 0);
+        }
+
+        function drawDuelWheel() {
+            const canvas = document.getElementById('duelWheelCanvas');
+            if (!canvas) return;
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            const size = rect.width || 300;
+            canvas.width = size * dpr;
+            canvas.height = size * dpr;
+
+            const ctx = canvas.getContext('2d');
+            ctx.scale(dpr, dpr);
+
+            const cx = size / 2;
+            const cy = size / 2;
+            const radius = (size / 2) - 6;
+
+            ctx.clearRect(0, 0, size, size);
+
+            const eligible = getEligiblePlayers();
+            if (eligible.length === 0) return;
+
+            const sliceAngle = (2 * Math.PI) / eligible.length;
+
+            eligible.forEach((player, i) => {
+                const startAngle = gameState.duelWheelAngle + i * sliceAngle;
+                const endAngle = startAngle + sliceAngle;
+
+                // Slice fill
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.arc(cx, cy, radius, startAngle, endAngle);
+                ctx.closePath();
+                ctx.fillStyle = player.color.hex;
+                ctx.fill();
+
+                // Slice border
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = '#09090f';
+                ctx.stroke();
+
+                // Player Label & Song Count
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate(startAngle + sliceAngle / 2);
+                ctx.textAlign = 'right';
+                ctx.fillStyle = '#09090f';
+                ctx.font = '800 15px "Space Grotesk", sans-serif';
+                ctx.fillText(player.name.toUpperCase(), radius - 22, 2);
+
+                ctx.font = '700 11px "Inter", sans-serif';
+                ctx.fillText(`${player.remainingSongs.length} left`, radius - 22, 16);
+                ctx.restore();
+            });
+
+            // Outer metallic rim
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
+            ctx.lineWidth = 5;
+            ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+            ctx.stroke();
+        }
+
+        function spinDuelWheel() {
+            if (gameState.isSpinning) return;
+            if (gameState.currentDuel) {
+                showToast('Finish judging the active duel before spinning again!', 'error');
+                return;
+            }
+
+            const eligible = getEligiblePlayers();
+            if (eligible.length < 2) {
+                handleEndOfDuelStage();
+                return;
+            }
+
+            initAudio();
+            gameState.isSpinning = true;
+            document.getElementById('spinWheelActionBtn').disabled = true;
+            document.getElementById('centerSpinBtn').disabled = true;
+            document.getElementById('wheelInstructionTitle').textContent = 'Spinning for Competitors...';
+
+            // Select 2 distinct players from eligible pool
+            const shuffled = [...eligible].sort(() => Math.random() - 0.5);
+            const playerA = shuffled[0];
+            const playerB = shuffled[1];
+
+            // Calculate target angle so pointer at top (-Math.PI / 2) lands on Player A
+            const playerAIndex = eligible.findIndex(p => p.id === playerA.id);
+            const sliceAngle = (2 * Math.PI) / eligible.length;
+            const targetSliceCenter = playerAIndex * sliceAngle + sliceAngle / 2;
+            const pointerAngle = -Math.PI / 2;
+
+            const extraSpins = 5 + Math.floor(Math.random() * 3);
+            const finalTargetAngle = pointerAngle - targetSliceCenter + extraSpins * 2 * Math.PI;
+            const startAngle = gameState.duelWheelAngle % (2 * Math.PI);
+            const totalDelta = finalTargetAngle - startAngle;
+
+            const duration = 2600;
+            const startTime = performance.now();
+            let lastTickSlice = -1;
+
+            function animateSpin(now) {
+                const elapsed = now - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                // Cubic ease-out
+                const easeOut = 1 - Math.pow(1 - progress, 3);
+
+                gameState.duelWheelAngle = startAngle + totalDelta * easeOut;
+                drawDuelWheel();
+
+                // Tick sound on slice crossings
+                const currentSlice = Math.floor(((gameState.duelWheelAngle % (2 * Math.PI)) + 2 * Math.PI) / sliceAngle);
+                if (currentSlice !== lastTickSlice) {
+                    playWheelTick(0.85 + progress * 0.35);
+                    lastTickSlice = currentSlice;
+                }
+
+                if (progress < 1) {
+                    requestAnimationFrame(animateSpin);
+                } else {
+                    gameState.isSpinning = false;
+                    launchHeadToHeadDuel(playerA, playerB);
+                }
+            }
+
+            requestAnimationFrame(animateSpin);
+        }
+
+        function launchHeadToHeadDuel(playerA, playerB) {
+            playFanfare();
+
+            // Randomly pick 1 remaining song from Player A and 1 from Player B
+            const songA = playerA.remainingSongs[Math.floor(Math.random() * playerA.remainingSongs.length)];
+            const songB = playerB.remainingSongs[Math.floor(Math.random() * playerB.remainingSongs.length)];
+
+            // The other 3 players become the judges
+            const judges = gameState.players.filter(p => p.id !== playerA.id && p.id !== playerB.id);
+
+            gameState.currentDuel = {
+                playerA,
+                playerB,
+                songA,
+                songB,
+                judges,
+                votes: {},
+                peekRevealed: false
+            };
+
+            document.getElementById('wheelInstructionTitle').textContent = `${playerA.name} vs ${playerB.name}!`;
+            document.getElementById('wheelInstructionDesc').textContent = `Listen to both tracks below and have ${judges.map(j => j.name).join(', ')} cast the 3 judge votes.`;
+
+            renderActiveBattleCard();
+        }
+
+        function renderActiveBattleCard() {
+            const duel = gameState.currentDuel;
+            if (!duel) {
+                document.getElementById('activeBattleCard').classList.add('hidden');
+                return;
+            }
+
+            const card = document.getElementById('activeBattleCard');
+            card.classList.remove('hidden');
+
+            const showOwners = !gameState.blindMode || duel.peekRevealed;
+
+            // Blind mode indicator pill
+            const blindPill = document.getElementById('blindIndicatorPill');
+            if (showOwners) {
+                blindPill.innerHTML = `<i class="fa-solid fa-eye mr-1"></i> Owners Revealed`;
+                blindPill.className = 'px-2.5 py-1 rounded-lg bg-neonCyan/20 text-neonCyan border border-neonCyan/40 text-xs font-semibold';
+            } else {
+                blindPill.innerHTML = `<i class="fa-solid fa-mask mr-1"></i> Blind Mode (Owners Hidden)`;
+                blindPill.className = 'px-2.5 py-1 rounded-lg bg-neonPurple/20 text-neonPurple border border-neonPurple/40 text-xs font-semibold';
+            }
+
+            // Track A details
+            document.getElementById('trackATitle').textContent = duel.songA.title;
+            const ownerABadge = document.getElementById('trackAOwnerBadge');
+            if (showOwners) {
+                ownerABadge.textContent = duel.playerA.name;
+                ownerABadge.style.backgroundColor = duel.playerA.color.hex + '33';
+                ownerABadge.style.color = duel.playerA.color.hex;
+            } else {
+                ownerABadge.textContent = '??? Hidden';
+                ownerABadge.style.backgroundColor = 'rgba(255,255,255,0.08)';
+                ownerABadge.style.color = '#9ca3af';
+            }
+            document.getElementById('trackAYoutubeLink').href = `https://www.youtube.com/results?search_query=${encodeURIComponent(duel.songA.title)}`;
+            document.getElementById('trackASpotifyLink').href = `https://open.spotify.com/search/${encodeURIComponent(duel.songA.title)}`;
+
+            // Track B details
+            document.getElementById('trackBTitle').textContent = duel.songB.title;
+            const ownerBBadge = document.getElementById('trackBOwnerBadge');
+            if (showOwners) {
+                ownerBBadge.textContent = duel.playerB.name;
+                ownerBBadge.style.backgroundColor = duel.playerB.color.hex + '33';
+                ownerBBadge.style.color = duel.playerB.color.hex;
+            } else {
+                ownerBBadge.textContent = '??? Hidden';
+                ownerBBadge.style.backgroundColor = 'rgba(255,255,255,0.08)';
+                ownerBBadge.style.color = '#9ca3af';
+            }
+            document.getElementById('trackBYoutubeLink').href = `https://www.youtube.com/results?search_query=${encodeURIComponent(duel.songB.title)}`;
+            document.getElementById('trackBSpotifyLink').href = `https://open.spotify.com/search/${encodeURIComponent(duel.songB.title)}`;
+
+            // Render 3 Judges Voting Controls
+            const judgesContainer = document.getElementById('judgesVotingContainer');
+            judgesContainer.innerHTML = '';
+
+            duel.judges.forEach(judge => {
+                const currentVote = duel.votes[judge.id];
+                const judgeCard = document.createElement('div');
+                judgeCard.className = 'p-3.5 rounded-2xl bg-darkBg/90 border border-white/10 flex flex-col gap-2.5';
+
+                judgeCard.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full" style="background-color: ${judge.color.hex}"></span>
+                            <span class="font-display font-bold text-sm text-white">${escapeHtml(judge.name)}</span>
+                        </div>
+                        <span class="text-[11px] uppercase tracking-wider text-gray-500 font-semibold">Judge</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="castJudgeVote(${judge.id}, 'A')" class="py-2 px-2.5 rounded-xl text-xs font-bold border transition-all ${
+                            currentVote === 'A' 
+                            ? 'bg-neonCyan text-darkBg border-neonCyan shadow-[0_0_15px_rgba(0,240,255,0.4)]' 
+                            : 'bg-white/5 hover:bg-neonCyan/20 text-gray-300 border-white/10'
+                        }">
+                            Track A
+                        </button>
+                        <button onclick="castJudgeVote(${judge.id}, 'B')" class="py-2 px-2.5 rounded-xl text-xs font-bold border transition-all ${
+                            currentVote === 'B' 
+                            ? 'bg-neonPink text-white border-neonPink shadow-[0_0_15px_rgba(255,42,133,0.4)]' 
+                            : 'bg-white/5 hover:bg-neonPink/20 text-gray-300 border-white/10'
+                        }">
+                            Track B
+                        </button>
+                    </div>
+                `;
+                judgesContainer.appendChild(judgeCard);
+            });
+
+            updateVoteTallyUI();
+            card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function toggleRevealDuringDuel() {
+            if (!gameState.currentDuel) return;
+            playClick();
+            gameState.currentDuel.peekRevealed = !gameState.currentDuel.peekRevealed;
+            renderActiveBattleCard();
+        }
+
+        function castJudgeVote(judgeId, choice) {
+            if (!gameState.currentDuel) return;
+            playClick();
+            gameState.currentDuel.votes[judgeId] = choice;
+            renderActiveBattleCard();
+        }
+
+        function updateVoteTallyUI() {
+            const duel = gameState.currentDuel;
+            if (!duel) return;
+
+            const votesArr = Object.values(duel.votes);
+            const votesA = votesArr.filter(v => v === 'A').length;
+            const votesB = votesArr.filter(v => v === 'B').length;
+
+            document.getElementById('trackAVotesDisplay').textContent = `${votesA} / 3 Judge Votes`;
+            document.getElementById('trackBVotesDisplay').textContent = `${votesB} / 3 Judge Votes`;
+
+            const summaryEl = document.getElementById('voteStatusSummary');
+            const confirmBtn = document.getElementById('confirmDuelWinnerBtn');
+
+            if (votesArr.length < 3) {
+                summaryEl.innerHTML = `<span class="text-neonAmber font-semibold">${3 - votesArr.length} judge vote(s) remaining</span> before locking result.`;
+                confirmBtn.disabled = true;
+            } else {
+                const leadingSide = votesA > votesB ? 'Contender A' : 'Contender B';
+                const scoreText = `${Math.max(votesA, votesB)}–${Math.min(votesA, votesB)}`;
+                summaryEl.innerHTML = `<span class="text-neonLime font-bold">${leadingSide}</span> leads <span class="font-mono font-bold text-white">${scoreText}</span>! Ready to lock.`;
+                confirmBtn.disabled = false;
+            }
+        }
+
+        function resolveDuelMatch() {
+            const duel = gameState.currentDuel;
+            if (!duel) return;
+
+            const votesArr = Object.values(duel.votes);
+            if (votesArr.length < 3) {
+                showToast('All 3 judges must vote before locking the winner!', 'error');
+                return;
+            }
+
+            const votesA = votesArr.filter(v => v === 'A').length;
+            const votesB = votesArr.filter(v => v === 'B').length;
+
+            const aWon = votesA > votesB;
+            const winnerPlayer = aWon ? duel.playerA : duel.playerB;
+            const loserPlayer = aWon ? duel.playerB : duel.playerA;
+            const winningSong = aWon ? duel.songA : duel.songB;
+            const losingSong = aWon ? duel.songB : duel.songA;
+
+            // 1. Award Win Point to winning player
+            winnerPlayer.wins += 1;
+            duel.playerA.matchesPlayed += 1;
+            duel.playerB.matchesPlayed += 1;
+
+            // 2. Delete BOTH competed songs from the active pool (User's exact rule)
+            duel.playerA.remainingSongs = duel.playerA.remainingSongs.filter(s => s.id !== duel.songA.id);
+            duel.playerB.remainingSongs = duel.playerB.remainingSongs.filter(s => s.id !== duel.songB.id);
+
+            const roundNum = gameState.duelHistory.length + 1;
+            const winScoreStr = `${Math.max(votesA, votesB)}-${Math.min(votesA, votesB)}`;
+            const loseScoreStr = `${Math.min(votesA, votesB)}-${Math.max(votesA, votesB)}`;
+
+            // Update Song Records for Live Song Leaderboard
+            if (gameState.songRecords[winningSong.id]) {
+                Object.assign(gameState.songRecords[winningSong.id], {
+                    status: 'won',
+                    opponentTitle: losingSong.title,
+                    opponentOwner: loserPlayer.name,
+                    voteScore: winScoreStr,
+                    round: roundNum
+                });
+            }
+            if (gameState.songRecords[losingSong.id]) {
+                Object.assign(gameState.songRecords[losingSong.id], {
+                    status: 'lost',
+                    opponentTitle: winningSong.title,
+                    opponentOwner: winnerPlayer.name,
+                    voteScore: loseScoreStr,
+                    round: roundNum
+                });
+            }
+
+            // 3. Log match in history
+            gameState.duelHistory.unshift({
+                round: roundNum,
+                winnerName: winnerPlayer.name,
+                winnerColor: winnerPlayer.color.hex,
+                winningSong: winningSong.title,
+                loserName: loserPlayer.name,
+                losingSong: losingSong.title,
+                score: winScoreStr
+            });
+
+            // 4. Show celebration overlay briefly
+            playFanfare();
+            triggerWinnerCelebration(winnerPlayer.name, winningSong.title);
+
+            // 5. Clear current duel & update UI
+            gameState.currentDuel = null;
+            document.getElementById('activeBattleCard').classList.add('hidden');
+            updateDuelUI();
+
+            // 6. Check if valid 2-player matchups still exist
+            const eligible = getEligiblePlayers();
+            if (eligible.length < 2) {
+                setTimeout(() => {
+                    handleEndOfDuelStage();
+                }, 1700);
+            } else {
+                document.getElementById('spinWheelActionBtn').disabled = false;
+                document.getElementById('centerSpinBtn').disabled = false;
+                document.getElementById('wheelInstructionTitle').textContent = 'Ready for the Next Duel!';
+                document.getElementById('wheelInstructionDesc').textContent = `${getTotalRemainingSongs()} songs remain across ${eligible.length} players. Spin the wheel!`;
+                drawDuelWheel();
+            }
+        }
+
+        function triggerWinnerCelebration(playerName, songTitle) {
+            const overlay = document.getElementById('winnerBannerOverlay');
+            document.getElementById('winnerBannerPlayer').textContent = playerName;
+            document.getElementById('winnerBannerSong').textContent = `"${songTitle}"`;
+            overlay.classList.remove('hidden');
+            overlay.classList.add('flex');
+
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+                overlay.classList.remove('flex');
+            }, 1650);
+        }
+
+        function handleEndOfDuelStage() {
+            // Edge case: If 1 player somehow still has leftover songs because others ran out, inform cleanly
+            const leftoverPlayers = getEligiblePlayers();
+            if (leftoverPlayers.length === 1) {
+                const sole = leftoverPlayers[0];
+                const leftCount = sole.remainingSongs.length;
+                showToast(`All opponents are out of songs! ${sole.name}'s ${leftCount} unplayed track(s) close out the pool.`, 'info');
+                sole.remainingSongs = [];
+            } else {
+                showToast('All 20 songs have battled! Advancing to the Reward Draft.', 'success');
+            }
+
+            startFinalePhase();
+        }
+
+        function updateDuelUI() {
+            // 1. Top Scoreboard
+            const scoreboard = document.getElementById('duelScoreboard');
+            scoreboard.innerHTML = '';
+
+            gameState.players.forEach(p => {
+                const card = document.createElement('div');
+                const exhausted = p.remainingSongs.length === 0;
+                card.className = `glass-panel rounded-2xl p-3.5 border ${exhausted ? 'border-white/5 opacity-60' : p.color.border} flex items-center justify-between transition-all`;
+                card.innerHTML = `
+                    <div class="min-w-0 pr-2">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color: ${p.color.hex}"></span>
+                            <span class="font-display font-bold text-sm text-white truncate">${escapeHtml(p.name)}</span>
+                        </div>
+                        <div class="text-[11px] text-gray-400 mt-0.5">
+                            ${p.remainingSongs.length}/4 songs left
+                        </div>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <div class="font-display text-xl font-black text-white leading-none">${p.wins}</div>
+                        <div class="text-[10px] uppercase tracking-wider text-neonCyan font-bold mt-0.5">Wins</div>
+                    </div>
+                `;
+                scoreboard.appendChild(card);
+            });
+
+            // 2. Round & Pool Badges
+            const remainingTotal = getTotalRemainingSongs();
+            document.getElementById('duelRoundLabel').textContent = `Round ${gameState.duelHistory.length + 1} • ${remainingTotal} Songs Remaining`;
+            document.getElementById('poolRemainingPill').textContent = `${remainingTotal} left`;
+            document.getElementById('matchesPlayedPill').textContent = `${gameState.duelHistory.length} Duels`;
+
+            // 3. Sidebar Pool Breakdown
+            const poolList = document.getElementById('poolStatusList');
+            poolList.innerHTML = '';
+            gameState.players.forEach(p => {
+                const pips = Array.from({ length: 4 }, (_, idx) => {
+                    const active = idx < p.remainingSongs.length;
+                    return `<span class="w-4 h-2 rounded-full transition-all" style="background-color: ${active ? p.color.hex : 'rgba(255,255,255,0.08)'}"></span>`;
+                }).join('');
+
+                poolList.innerHTML += `
+                    <div class="flex items-center justify-between py-1">
+                        <span class="text-gray-300 font-medium text-xs truncate max-w-[130px]">${escapeHtml(p.name)}</span>
+                        <div class="flex items-center gap-1.5">${pips}</div>
+                    </div>
+                `;
+            });
+
+            // 4. Match History Feed
+            const feed = document.getElementById('matchHistoryFeed');
+            if (gameState.duelHistory.length === 0) {
+                feed.innerHTML = `
+                    <div class="text-center py-8 text-gray-500 text-xs">
+                        <i class="fa-solid fa-music text-2xl mb-2 block opacity-40"></i>
+                        No battles fought yet.<br>Spin the wheel to start the clash!
+                    </div>
+                `;
+            } else {
+                feed.innerHTML = gameState.duelHistory.map(item => `
+                    <div class="p-3 rounded-2xl bg-darkBg/80 border border-white/10 text-xs space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold text-gray-400">Duel #${item.round}</span>
+                            <span class="px-2 py-0.5 rounded bg-white/10 font-mono text-[11px] text-white">${item.score}</span>
+                        </div>
+                        <div class="text-white font-semibold">
+                            <span style="color: ${item.winnerColor}">${escapeHtml(item.winnerName)}</span> won with <span class="text-neonCyan">"${escapeHtml(item.winningSong)}"</span>
+                        </div>
+                        <div class="text-gray-500 line-through truncate">
+                            Defeated: ${escapeHtml(item.loserName)} — "${escapeHtml(item.losingSong)}"
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // 5. Refresh Live Player & Song Leaderboards
+            renderLiveLeaderboards();
+        }
+
+        /**
+         * ============================================================================
+         * LIVE PLAYER & SONG LEADERBOARDS (DUEL ARENA, FINALE & QUICK MODAL)
+         * ============================================================================
+         */
+        function switchLeaderboardTab(tab) {
+            playClick();
+            gameState.activeLbTab = tab;
+            const pBtn = document.getElementById('lbTabPlayers');
+            const sBtn = document.getElementById('lbTabSongs');
+            const pPanel = document.getElementById('lbPanelPlayers');
+            const sPanel = document.getElementById('lbPanelSongs');
+
+            if (tab === 'players') {
+                pBtn.className = 'px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-neonPink text-white shadow-lg shadow-neonPink/30 transition-all flex items-center gap-2';
+                sBtn.className = 'px-4 py-2 rounded-xl text-xs sm:text-sm font-bold text-gray-400 hover:text-white transition-all flex items-center gap-2';
+                pPanel.classList.remove('hidden');
+                sPanel.classList.add('hidden');
+            } else {
+                sBtn.className = 'px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-neonPink text-white shadow-lg shadow-neonPink/30 transition-all flex items-center gap-2';
+                pBtn.className = 'px-4 py-2 rounded-xl text-xs sm:text-sm font-bold text-gray-400 hover:text-white transition-all flex items-center gap-2';
+                sPanel.classList.remove('hidden');
+                pPanel.classList.add('hidden');
+            }
+        }
+
+        function setSongLeaderboardFilter(filter) {
+            playClick();
+            gameState.songLbFilter = filter;
+            document.querySelectorAll('.song-filter-btn').forEach(btn => {
+                btn.className = 'song-filter-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 transition-all';
+            });
+            const activeBtn = document.getElementById(`songFilter-${filter}`);
+            if (activeBtn) {
+                activeBtn.className = 'song-filter-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-neonCyan text-darkBg transition-all';
+            }
+            renderLiveLeaderboards();
+        }
+
+        function setSongLeaderboardPlayerFilter(val) {
+            gameState.songLbPlayerFilter = val;
+            renderLiveLeaderboards();
+        }
+
+        function buildPlayerLeaderboardRowsHtml() {
+            if (!gameState.players || gameState.players.length === 0) {
+                return `<tr><td colspan="6" class="py-6 text-center text-gray-400 text-xs">Start the game in Setup to view live player standings!</td></tr>`;
+            }
+            const ranked = [...gameState.players].sort((a, b) => {
+                if (b.wins !== a.wins) return b.wins - a.wins;
+                return b.remainingSongs.length - a.remainingSongs.length;
+            });
+
+            return ranked.map((p, idx) => {
+                const winPct = p.matchesPlayed > 0 ? Math.round((p.wins / p.matchesPlayed) * 100) : 0;
+                const isFirst = idx === 0 && p.wins > 0;
+                return `
+                    <tr class="hover:bg-white/5 transition-colors">
+                        <td class="py-3 px-3 font-display font-black ${isFirst ? 'text-neonAmber' : 'text-gray-400'}">
+                            ${isFirst ? '<i class="fa-solid fa-crown mr-1"></i> #1' : `#${idx + 1}`}
+                        </td>
+                        <td class="py-3 px-3">
+                            <div class="flex items-center gap-2.5">
+                                <span class="w-3 h-3 rounded-full shrink-0" style="background-color: ${p.color.hex}"></span>
+                                <span class="font-display font-bold text-white">${escapeHtml(p.name)}</span>
+                            </div>
+                        </td>
+                        <td class="py-3 px-3 text-center font-mono font-bold text-white">
+                            ${p.wins} / 4
+                        </td>
+                        <td class="py-3 px-3 text-center">
+                            <span class="px-2 py-0.5 rounded-lg bg-white/5 text-xs font-mono text-gray-300">${winPct}%</span>
+                        </td>
+                        <td class="py-3 px-3 text-center text-xs text-gray-300">
+                            ${p.remainingSongs.length} left
+                        </td>
+                        <td class="py-3 px-3 text-right">
+                            <span class="px-2.5 py-1 rounded-lg text-xs font-display font-bold ${p.wins > 0 ? 'bg-neonCyan/20 text-neonCyan' : 'bg-white/5 text-gray-500'}">
+                                +${p.wins} Song${p.wins === 1 ? '' : 's'}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function buildSongLeaderboardRowsHtml(ignoreFilters = false) {
+            const allRecords = Object.values(gameState.songRecords || {});
+            if (allRecords.length === 0) {
+                return `<tr><td colspan="6" class="py-6 text-center text-gray-400 text-xs">No songs loaded yet.</td></tr>`;
+            }
+
+            let filtered = allRecords;
+            if (!ignoreFilters) {
+                if (gameState.songLbFilter === 'winners') {
+                    filtered = filtered.filter(s => s.status === 'won');
+                } else if (gameState.songLbFilter === 'pool') {
+                    filtered = filtered.filter(s => s.status === 'in_pool');
+                }
+                if (gameState.songLbPlayerFilter !== 'all') {
+                    filtered = filtered.filter(s => String(s.ownerId) === String(gameState.songLbPlayerFilter));
+                }
+            }
+
+            // Sort: Winners first (by round), then Losers, then Still In Pool
+            const statusOrder = { won: 0, lost: 1, in_pool: 2 };
+            filtered.sort((a, b) => {
+                if (statusOrder[a.status] !== statusOrder[b.status]) {
+                    return statusOrder[a.status] - statusOrder[b.status];
+                }
+                return (b.round || 0) - (a.round || 0);
+            });
+
+            if (filtered.length === 0) {
+                return `<tr><td colspan="6" class="py-6 text-center text-gray-400 text-xs">No songs match the selected filter yet.</td></tr>`;
+            }
+
+            return filtered.map(s => {
+                let statusBadge = `<span class="px-2.5 py-0.5 rounded-full bg-white/10 text-gray-300 text-[11px] font-semibold">In Pool</span>`;
+                if (s.status === 'won') {
+                    statusBadge = `<span class="px-2.5 py-0.5 rounded-full bg-neonLime/20 text-neonLime border border-neonLime/40 text-[11px] font-bold"><i class="fa-solid fa-trophy mr-1"></i>WINNER</span>`;
+                } else if (s.status === 'lost') {
+                    statusBadge = `<span class="px-2.5 py-0.5 rounded-full bg-red-500/15 text-red-300 border border-red-500/30 text-[11px] font-semibold">ELIMINATED</span>`;
+                }
+
+                const opponentCell = s.opponentTitle
+                    ? `<span class="text-gray-300 truncate block max-w-[180px]" title="${escapeHtml(s.opponentTitle)}">${escapeHtml(s.opponentTitle)} <span class="text-gray-500">(${escapeHtml(s.opponentOwner)})</span></span>`
+                    : `<span class="text-gray-600">—</span>`;
+
+                return `
+                    <tr class="hover:bg-white/5 transition-colors">
+                        <td class="py-3 px-3 font-semibold text-white max-w-[210px] truncate" title="${escapeHtml(s.title)}">
+                            ${escapeHtml(s.title)}
+                        </td>
+                        <td class="py-3 px-3">
+                            <span class="inline-flex items-center gap-1.5 text-xs font-medium text-gray-200">
+                                <span class="w-2 h-2 rounded-full" style="background-color: ${s.ownerColor}"></span>
+                                ${escapeHtml(s.ownerName)}
+                            </span>
+                        </td>
+                        <td class="py-3 px-3 text-xs">${opponentCell}</td>
+                        <td class="py-3 px-3 text-center font-mono text-xs text-white font-bold">
+                            ${s.voteScore || '—'}
+                        </td>
+                        <td class="py-3 px-3 text-center">${statusBadge}</td>
+                        <td class="py-3 px-3 text-right">
+                            <div class="inline-flex items-center gap-1.5">
+                                <a href="https://www.youtube.com/results?search_query=${encodeURIComponent(s.title)}" target="_blank" rel="noopener noreferrer" title="YouTube" class="p-1.5 rounded-lg bg-red-600/20 hover:bg-red-600/35 text-red-300 text-xs transition-all">
+                                    <i class="fa-brands fa-youtube"></i>
+                                </a>
+                                <a href="https://open.spotify.com/search/${encodeURIComponent(s.title)}" target="_blank" rel="noopener noreferrer" title="Spotify" class="p-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/35 text-emerald-300 text-xs transition-all">
+                                    <i class="fa-brands fa-spotify"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderLiveLeaderboards() {
+            const playerBody = document.getElementById('playerLeaderboardBody');
+            if (playerBody) {
+                playerBody.innerHTML = buildPlayerLeaderboardRowsHtml();
+            }
+            const songBody = document.getElementById('songLeaderboardBody');
+            if (songBody) {
+                songBody.innerHTML = buildSongLeaderboardRowsHtml(false);
+            }
+            const finaleRecapBody = document.getElementById('finaleSongRecapBody');
+            if (finaleRecapBody) {
+                finaleRecapBody.innerHTML = buildSongLeaderboardRowsHtml(true);
+            }
+        }
+
+        function toggleLeaderboardModal() {
+            playClick();
+            const modal = document.getElementById('leaderboardModal');
+            const isHidden = modal.classList.contains('hidden');
+            if (isHidden) {
+                const container = document.getElementById('modalLeaderboardContent');
+                container.innerHTML = `
+                    <div>
+                        <h4 class="font-display font-bold text-neonCyan text-sm uppercase tracking-wider mb-2">Player Rankings</h4>
+                        <div class="overflow-x-auto rounded-2xl border border-white/10 bg-darkBg/70">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="border-b border-white/10 text-[11px] uppercase tracking-wider text-gray-400">
+                                        <th class="py-2.5 px-3">Rank</th>
+                                        <th class="py-2.5 px-3">Player</th>
+                                        <th class="py-2.5 px-3 text-center">Wins</th>
+                                        <th class="py-2.5 px-3 text-center">Win %</th>
+                                        <th class="py-2.5 px-3 text-center">Remaining</th>
+                                        <th class="py-2.5 px-3 text-right">Finale Picks</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-white/5 text-sm">
+                                    ${buildPlayerLeaderboardRowsHtml()}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="font-display font-bold text-neonPink text-sm uppercase tracking-wider mb-2">All 20 Tracks & Duel Results</h4>
+                        <div class="overflow-x-auto rounded-2xl border border-white/10 bg-darkBg/70">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="border-b border-white/10 text-[11px] uppercase tracking-wider text-gray-400">
+                                        <th class="py-2.5 px-3">Song Title</th>
+                                        <th class="py-2.5 px-3">Player</th>
+                                        <th class="py-2.5 px-3">Opponent</th>
+                                        <th class="py-2.5 px-3 text-center">Score</th>
+                                        <th class="py-2.5 px-3 text-center">Status</th>
+                                        <th class="py-2.5 px-3 text-right">Listen</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-white/5 text-xs">
+                                    ${buildSongLeaderboardRowsHtml(true)}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            } else {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }
+
+        /**
+         * ============================================================================
+         * PHASE 3: FINALE, REWARD DRAFT & FINAL PLAYLIST WHEEL
+         * ============================================================================
+         */
+        function startFinalePhase() {
+            gameState.phase = 'finale';
+            switchPhaseUI('finale');
+            renderFinaleLeaderboardAndDraft();
+            renderLiveLeaderboards();
+        }
+
+        /**
+         * ============================================================================
+         * PHASE 3: FINALE, REWARD DRAFT & FINAL PLAYLIST WHEEL
+         * ============================================================================
+         */
+        function startFinalePhase() {
+            gameState.phase = 'finale';
+            switchPhaseUI('finale');
+            renderFinaleLeaderboardAndDraft();
+        }
+
+        function renderFinaleLeaderboardAndDraft() {
+            const sortedPlayers = [...gameState.players].sort((a, b) => b.wins - a.wins);
+            const totalWins = sortedPlayers.reduce((sum, p) => sum + p.wins, 0);
+
+            document.getElementById('totalEarnedPicksDisplay').textContent = `${totalWins} Bonus Song${totalWins === 1 ? '' : 's'}`;
+
+            // 1. Render Leaderboard Cards
+            const lbGrid = document.getElementById('finaleLeaderboardGrid');
+            lbGrid.innerHTML = '';
+
+            sortedPlayers.forEach((p, rankIdx) => {
+                const isTop = rankIdx === 0 && p.wins > 0;
+                const card = document.createElement('div');
+                card.className = `rounded-2xl p-4 bg-darkBg/90 border ${isTop ? 'border-neonAmber shadow-[0_0_25px_rgba(255,183,3,0.2)]' : p.color.border} flex flex-col justify-between`;
+                card.innerHTML = `
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-extrabold uppercase tracking-wider ${isTop ? 'text-neonAmber' : 'text-gray-400'}">
+                            ${isTop ? '<i class="fa-solid fa-crown mr-1"></i> #1 Champion' : `#${rankIdx + 1} Place`}
+                        </span>
+                        <span class="w-3 h-3 rounded-full" style="background-color: ${p.color.hex}"></span>
+                    </div>
+                    <div>
+                        <div class="font-display text-xl font-bold text-white truncate">${escapeHtml(p.name)}</div>
+                        <div class="text-xs text-gray-400 mt-1">
+                            Won <strong class="text-white">${p.wins} / 4</strong> battles
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between">
+                        <span class="text-xs text-gray-400">Draft Quota:</span>
+                        <span class="px-2.5 py-1 rounded-lg font-display font-bold text-xs ${p.wins > 0 ? 'bg-neonCyan/20 text-neonCyan' : 'bg-white/5 text-gray-500'}">
+                            +${p.wins} Song${p.wins === 1 ? '' : 's'}
+                        </span>
+                    </div>
+                `;
+                lbGrid.appendChild(card);
+            });
+
+            // 2. Render Reward Draft Inputs for each player based on their wins
+            const inputsContainer = document.getElementById('rewardDraftInputsContainer');
+            inputsContainer.innerHTML = '';
+
+            sortedPlayers.forEach(p => {
+                const box = document.createElement('div');
+                box.className = `rounded-2xl p-5 bg-darkBg/80 border ${p.wins > 0 ? p.color.border : 'border-white/5 opacity-60'} space-y-3`;
+
+                let fieldsHtml = '';
+                if (p.wins === 0) {
+                    fieldsHtml = `
+                        <div class="py-6 text-center text-xs text-gray-500 bg-white/5 rounded-xl border border-dashed border-white/10">
+                            0/4 Wins — No bonus picks earned this round.
+                        </div>
+                    `;
+                } else {
+                    for (let i = 0; i < p.wins; i++) {
+                        fieldsHtml += `
+                            <div class="relative">
+                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-mono font-bold text-neonCyan">#${i + 1}</span>
+                                <input 
+                                    type="text" 
+                                    id="reward_p${p.id}_s${i}" 
+                                    placeholder="Enter bonus track title..."
+                                    class="w-full pl-9 pr-3 py-2.5 rounded-xl bg-white/5 border border-white/10 focus:border-neonCyan focus:bg-white/10 focus:outline-none text-xs text-white placeholder-gray-600 transition-all"
+                                >
+                            </div>
+                        `;
+                    }
+                }
+
+                box.innerHTML = `
+                    <div class="flex items-center justify-between border-b border-white/10 pb-2.5">
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full" style="background-color: ${p.color.hex}"></span>
+                            <span class="font-display font-bold text-white text-base">${escapeHtml(p.name)}</span>
+                        </div>
+                        <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-white/10 text-neonCyan">
+                            ${p.wins}/4 Wins → ${p.wins} Pick${p.wins === 1 ? '' : 's'}
+                        </span>
+                    </div>
+                    <div class="space-y-2.5">
+                        ${fieldsHtml}
+                    </div>
+                `;
+                inputsContainer.appendChild(box);
+            });
+        }
+
+        function fillDemoRewardSongs() {
+            playClick();
+            gameState.players.forEach((p, idx) => {
+                const bonusPool = DEMO_PLAYERS[idx]?.bonus || [
+                    'M83 - Midnight City',
+                    'Empire of the Sun - Walking On A Dream',
+                    'Foster The People - Pumped Up Kicks',
+                    'Phoenix - 1901'
+                ];
+                for (let i = 0; i < p.wins; i++) {
+                    const input = document.getElementById(`reward_p${p.id}_s${i}`);
+                    if (input) {
+                        input.value = bonusPool[i % bonusPool.length];
+                    }
+                }
+            });
+            showToast('Filled bonus reward tracks based on each player\'s wins!', 'success');
+        }
+
+        function lockRewardPlaylist() {
+            playClick();
+            const draftedTracks = [];
+
+            for (const p of gameState.players) {
+                for (let i = 0; i < p.wins; i++) {
+                    const input = document.getElementById(`reward_p${p.id}_s${i}`);
+                    const title = input ? input.value.trim() : '';
+                    if (!title) {
+                        showToast(`${p.name} still needs to enter bonus song #${i + 1}!`, 'error');
+                        return;
+                    }
+                    draftedTracks.push({
+                        id: `bonus_p${p.id}_${i}_${Date.now()}`,
+                        title,
+                        ownerName: p.name,
+                        colorHex: p.color.hex
+                    });
+                }
+            }
+
+            if (draftedTracks.length === 0) {
+                showToast('No bonus tracks were drafted!', 'error');
+                return;
+            }
+
+            gameState.unscheduledFinalTracks = draftedTracks;
+            gameState.scheduledFinalQueue = [];
+            gameState.finalWheelAngle = 0;
+
+            document.getElementById('finalPlaylistWheelSection').classList.remove('hidden');
+            renderFinalQueueList();
+            drawFinalPlaylistWheel();
+
+            document.getElementById('finalPlaylistWheelSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            showToast(`${draftedTracks.length} winning tracks loaded into the Final Playlist Wheel!`, 'success');
+        }
+
+        function drawFinalPlaylistWheel() {
+            const canvas = document.getElementById('finalWheelCanvas');
+            if (!canvas) return;
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            const size = rect.width || 310;
+            canvas.width = size * dpr;
+            canvas.height = size * dpr;
+
+            const ctx = canvas.getContext('2d');
+            ctx.scale(dpr, dpr);
+
+            const cx = size / 2;
+            const cy = size / 2;
+            const radius = (size / 2) - 6;
+
+            ctx.clearRect(0, 0, size, size);
+
+            const tracks = gameState.unscheduledFinalTracks;
+            if (tracks.length === 0) {
+                // Draw completed state circle
+                ctx.beginPath();
+                ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
+                ctx.fillStyle = '#12131f';
+                ctx.fill();
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = '#39ff14';
+                ctx.stroke();
+
+                ctx.fillStyle = '#39ff14';
+                ctx.font = '800 16px "Space Grotesk", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('PLAYLIST SET!', cx, cy - 28);
+                return;
+            }
+
+            const sliceAngle = (2 * Math.PI) / tracks.length;
+
+            tracks.forEach((track, i) => {
+                const startAngle = gameState.finalWheelAngle + i * sliceAngle;
+                const endAngle = startAngle + sliceAngle;
+
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.arc(cx, cy, radius, startAngle, endAngle);
+                ctx.closePath();
+                ctx.fillStyle = track.colorHex;
+                ctx.fill();
+
+                ctx.lineWidth = 2.5;
+                ctx.strokeStyle = '#09090f';
+                ctx.stroke();
+
+                // Truncated Track Title
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate(startAngle + sliceAngle / 2);
+                ctx.textAlign = 'right';
+                ctx.fillStyle = '#09090f';
+                ctx.font = '800 12px "Inter", sans-serif';
+                const shortTitle = track.title.length > 18 ? track.title.slice(0, 16) + '…' : track.title;
+                ctx.fillText(shortTitle, radius - 18, 4);
+                ctx.restore();
+            });
+        }
+
+        function spinFinalPlaylistWheel() {
+            if (gameState.isSpinning) return;
+            const tracks = gameState.unscheduledFinalTracks;
+            if (tracks.length === 0) {
+                showToast('All tracks have been queued!', 'info');
+                return;
+            }
+
+            if (tracks.length === 1) {
+                // Auto-queue last remaining track
+                const lastTrack = tracks.pop();
+                gameState.scheduledFinalQueue.push(lastTrack);
+                playFanfare();
+                drawFinalPlaylistWheel();
+                renderFinalQueueList();
+                showToast(`Queued final track: "${lastTrack.title}"!`, 'success');
+                return;
+            }
+
+            initAudio();
+            gameState.isSpinning = true;
+            document.getElementById('spinFinalWheelBtn').disabled = true;
+            document.getElementById('finalWheelCenterBtn').disabled = true;
+
+            const chosenIndex = Math.floor(Math.random() * tracks.length);
+            const sliceAngle = (2 * Math.PI) / tracks.length;
+            const targetSliceCenter = chosenIndex * sliceAngle + sliceAngle / 2;
+            const pointerAngle = -Math.PI / 2;
+
+            const extraSpins = 4 + Math.floor(Math.random() * 2);
+            const finalTargetAngle = pointerAngle - targetSliceCenter + extraSpins * 2 * Math.PI;
+            const startAngle = gameState.finalWheelAngle % (2 * Math.PI);
+            const totalDelta = finalTargetAngle - startAngle;
+
+            const duration = 2000;
+            const startTime = performance.now();
+            let lastTickSlice = -1;
+
+            function animateFinalSpin(now) {
+                const elapsed = now - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const easeOut = 1 - Math.pow(1 - progress, 3);
+
+                gameState.finalWheelAngle = startAngle + totalDelta * easeOut;
+                drawFinalPlaylistWheel();
+
+                const currentSlice = Math.floor(((gameState.finalWheelAngle % (2 * Math.PI)) + 2 * Math.PI) / sliceAngle);
+                if (currentSlice !== lastTickSlice) {
+                    playWheelTick(0.9 + progress * 0.35);
+                    lastTickSlice = currentSlice;
+                }
+
+                if (progress < 1) {
+                    requestAnimationFrame(animateFinalSpin);
+                } else {
+                    gameState.isSpinning = false;
+                    const [selectedTrack] = gameState.unscheduledFinalTracks.splice(chosenIndex, 1);
+                    gameState.scheduledFinalQueue.push(selectedTrack);
+                    playFanfare();
+
+                    // If only 1 remains after this spin, auto-append it as the closing track
+                    if (gameState.unscheduledFinalTracks.length === 1) {
+                        const finalOne = gameState.unscheduledFinalTracks.pop();
+                        gameState.scheduledFinalQueue.push(finalOne);
+                    }
+
+                    drawFinalPlaylistWheel();
+                    renderFinalQueueList();
+
+                    const hasMore = gameState.unscheduledFinalTracks.length > 0;
+                    document.getElementById('spinFinalWheelBtn').disabled = !hasMore;
+                    document.getElementById('finalWheelCenterBtn').disabled = !hasMore;
+                }
+            }
+
+            requestAnimationFrame(animateFinalSpin);
+        }
+
+        function autoQueueRemainingTracks() {
+            if (gameState.isSpinning || gameState.unscheduledFinalTracks.length === 0) return;
+            playFanfare();
+            const shuffled = [...gameState.unscheduledFinalTracks].sort(() => Math.random() - 0.5);
+            gameState.scheduledFinalQueue.push(...shuffled);
+            gameState.unscheduledFinalTracks = [];
+            drawFinalPlaylistWheel();
+            renderFinalQueueList();
+            document.getElementById('spinFinalWheelBtn').disabled = true;
+            document.getElementById('finalWheelCenterBtn').disabled = true;
+            showToast('Full Ultimate Playlist order finalized!', 'success');
+        }
+
+        function renderFinalQueueList() {
+            const list = document.getElementById('finalQueueList');
+            if (gameState.scheduledFinalQueue.length === 0) {
+                list.innerHTML = `
+                    <div class="p-8 rounded-2xl bg-darkBg/70 border border-dashed border-white/15 text-center text-gray-400 text-sm">
+                        <i class="fa-solid fa-record-vinyl text-3xl text-neonPink mb-2 block"></i>
+                        Spin the wheel on the left to lock in Track #1 of the Ultimate Playlist!
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = gameState.scheduledFinalQueue.map((track, idx) => `
+                <div class="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-darkBg/90 border border-white/10 animate-pop-in">
+                    <div class="flex items-center gap-3.5 min-w-0">
+                        <span class="w-8 h-8 rounded-xl bg-gradient-to-br from-neonCyan to-neonPurple text-darkBg font-display font-black text-sm flex items-center justify-center shrink-0">
+                            ${idx + 1}
+                        </span>
+                        <div class="min-w-0">
+                            <div class="font-display font-bold text-white text-sm sm:text-base truncate">${escapeHtml(track.title)}</div>
+                            <div class="text-xs flex items-center gap-1.5 mt-0.5">
+                                <span class="w-2 h-2 rounded-full" style="background-color: ${track.colorHex}"></span>
+                                <span class="text-gray-400">Picked by <strong class="text-gray-200">${escapeHtml(track.ownerName)}</strong></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <a href="https://www.youtube.com/results?search_query=${encodeURIComponent(track.title)}" target="_blank" rel="noopener noreferrer" title="Play on YouTube" class="p-2 rounded-xl bg-red-600/20 hover:bg-red-600/35 text-red-300 text-xs transition-all">
+                            <i class="fa-brands fa-youtube"></i>
+                        </a>
+                        <a href="https://open.spotify.com/search/${encodeURIComponent(track.title)}" target="_blank" rel="noopener noreferrer" title="Open in Spotify" class="p-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/35 text-emerald-300 text-xs transition-all">
+                            <i class="fa-brands fa-spotify"></i>
+                        </a>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function copyPlaylistToClipboard() {
+            if (gameState.scheduledFinalQueue.length === 0) {
+                showToast('Spin the wheel to queue some tracks first!', 'error');
+                return;
+            }
+            const text = gameState.scheduledFinalQueue
+                .map((t, i) => `${i + 1}. ${t.title} (Picked by ${t.ownerName})`)
+                .join('\n');
+
+            const tempArea = document.createElement('textarea');
+            tempArea.value = `🎵 SOUNDCLASH 5 — ULTIMATE GROUP PLAYLIST 🎵\n\n${text}`;
+            document.body.appendChild(tempArea);
+            tempArea.select();
+            try {
+                document.execCommand('copy');
+                playClick();
+                showToast('Ultimate Playlist copied to clipboard!', 'success');
+            } catch (err) {
+                showToast('Could not copy playlist automatically.', 'error');
+            }
+            document.body.removeChild(tempArea);
+        }
+
+        /**
+         * ============================================================================
+         * RESET MODAL HANDLERS
+         * ============================================================================
+         */
+        function openResetModal() {
+            playClick();
+            const modal = document.getElementById('resetModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeResetModal() {
+            playClick();
+            const modal = document.getElementById('resetModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function confirmResetGame() {
+            closeResetModal();
+            gameState = {
+                phase: 'setup',
+                blindMode: true,
+                players: [],
+                songRecords: {},
+                duelHistory: [],
+                currentDuel: null,
+                duelWheelAngle: 0,
+                isSpinning: false,
+                activeLbTab: 'players',
+                songLbFilter: 'all',
+                songLbPlayerFilter: 'all',
+                unscheduledFinalTracks: [],
+                scheduledFinalQueue: [],
+                finalWheelAngle: 0
+            };
+            document.getElementById('activeBattleCard').classList.add('hidden');
+            document.getElementById('finalPlaylistWheelSection').classList.add('hidden');
+            document.getElementById('spinWheelActionBtn').disabled = false;
+            document.getElementById('centerSpinBtn').disabled = false;
+            switchPhaseUI('setup');
+            renderSetupCards();
+            showToast('Game reset! Ready for a fresh 5-player battle.', 'info');
+        }
+
+        /**
+         * ============================================================================
+         * INITIALIZE ON WINDOW LOAD
+         * ============================================================================
+         */
+        window.addEventListener('resize', () => {
+            if (gameState.phase === 'duel') drawDuelWheel();
+            if (gameState.phase === 'finale') drawFinalPlaylistWheel();
+        });
+
+        window.onload = function() {
+            initPartyBackgroundVisualizer();
+            renderSetupCards();
+        };
+    </script>
+</body>
+</html>
