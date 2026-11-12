@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Song Duel Wheel</title>
+<style>
+:root{--bg:#f3efe6;--ink:#1d1b2e;--mut:#6b6880;--card:#fff;--line:#d9d3c4;--acc:#2b3dff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15141f;--ink:#f1eefc;--mut:#9a97b3;--card:#201f2f;--line:#33324a;--acc:#7c8bff;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#15141f;--ink:#f1eefc;--mut:#9a97b3;--card:#201f2f;--line:#33324a;--acc:#7c8bff;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Trebuchet MS","Segoe UI",system-ui,sans-serif}
+main{max-width:1000px;margin:0 auto;padding:16px}
+h1{font:900 clamp(28px,6vw,48px)/1 Georgia,"Times New Roman",serif;margin:8px 0 4px;letter-spacing:-.02em}
+h2{font:700 20px Georgia,serif;margin:0 0 10px}
+p.sub{color:var(--mut);margin:0 0 18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+input{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit;margin-top:6px}
+input:focus,button:focus-visible{outline:3px solid var(--acc);outline-offset:1px}
+button{font:inherit;font-weight:700;border:0;border-radius:10px;padding:12px 18px;background:var(--acc);color:#fff;cursor:pointer;min-height:44px}
+button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+button:disabled{opacity:.45;cursor:not-allowed}
+.pname{font-weight:800;display:flex;align-items:center;gap:8px}
+.dot{width:14px;height:14px;border-radius:50%;flex:none}
+.stage{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:800px){.stage{grid-template-columns:minmax(0,420px) minmax(0,1fr);align-items:start}}
+.wheelbox{position:relative;width:100%;max-width:420px;margin:0 auto;aspect-ratio:1}
+canvas{width:100%;height:100%;display:block}
+.ptr{position:absolute;top:-6px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:13px solid transparent;border-right:13px solid transparent;border-top:26px solid var(--ink);z-index:2}
+.duel{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:stretch;margin:10px 0}
+.song{border:2px solid var(--line);border-radius:12px;padding:12px;text-align:center;min-height:84px;display:flex;flex-direction:column;justify-content:center;word-break:break-word}
+.song small{color:var(--mut)}
+.vs{align-self:center;font:900 18px Georgia,serif;color:var(--mut)}
+.votes{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.voter{border:1px solid var(--line);border-radius:10px;padding:8px}
+.voter .b{display:flex;gap:6px;margin-top:6px}
+.voter button{flex:1;padding:8px;font-size:14px;min-height:40px}
+.voter button.sel{outline:3px solid var(--ink)}
+.score{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);border-radius:999px;padding:4px 12px;display:flex;gap:8px;align-items:center;font-size:14px}
+ul.log{list-style:none;margin:0;padding:0;max-height:220px;overflow:auto;font-size:14px}
+ul.log li{padding:6px 0;border-bottom:1px solid var(--line)}
+.hide{display:none}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.win{font-weight:800;color:var(--acc)}
+.tbl{overflow-x:auto}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<main>
+<h1>Song Duel Wheel</h1>
+<p class="sub">5 players, a pile of songs, one wheel. Spin, vote, win your next picks.</p>
+
+<section id="setup" class="card">
+  <h2>Add players and songs</h2>
+  <p class="sub" style="margin-bottom:10px">Each player adds 4 songs. Empty slots are allowed.</p>
+  <div class="grid" id="pgrid"></div>
+  <div class="row" style="margin-top:14px"><button id="start">Start game</button><button class="ghost" id="demo">Fill demo</button></div>
+</section>
+
+<section id="game" class="hide">
+  <div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Round <span id="rnd">1</span> · <span id="left"></span> songs left</h2><button class="ghost" id="reset">New game</button></div><div class="score" id="score" style="margin-top:10px"></div></div>
+  <div class="stage">
+    <div class="card">
+      <div class="wheelbox"><div class="ptr"></div><canvas id="wheel" width="840" height="840" aria-label="Song wheel"></canvas></div>
+      <div class="row" style="justify-content:center;margin-top:12px"><button id="spin">Spin wheel</button></div>
+      <p class="sub" id="hint" style="text-align:center;margin:8px 0 0"></p>
+    </div>
+    <div>
+      <div class="card" id="duelCard">
+        <h2>Duel</h2>
+        <div class="duel"><div class="song" id="sA"><small>Spin to pick the first song</small></div><div class="vs">vs</div><div class="song" id="sB"><small>then the second</small></div></div>
+        <div id="voteBox" class="hide"><p class="sub" style="margin:0 0 8px">The other three vote for the better song.</p><div class="votes" id="votes"></div><div class="row" style="margin-top:12px"><button id="confirm" disabled>Confirm result</button></div></div>
+      </div>
+      <div class="card"><h2>History</h2><ul class="log" id="log"></ul></div>
+    </div>
+  </div>
+</section>
+
+<section id="between" class="card hide">
+  <h2>Round <span id="brnd"></span> finished</h2>
+  <p class="sub">Each player earns as many new songs as they won. Add them, then start the next round.</p>
+  <div class="grid" id="bgrid"></div>
+  <div class="row" style="margin-top:14px"><button id="next">Start next round</button><button class="ghost" id="end">Finish game</button></div>
+</section>
+
+<section id="final" class="card hide">
+  <h2>Game over</h2>
+  <div class="tbl" id="ftbl"></div>
+  <div class="row" style="margin-top:14px"><button id="again">Play again</button></div>
+</section>
+</main>
+
+<script>
+const COLORS=["#e4572e","#2b9348","#2b3dff","#f2a900","#a23bbf"];
+const $=id=>document.getElementById(id);
+let players,songs,wins,total,round,pick,votes,angle=0,spinning=false;
+
+function esc(s){return s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+function buildInputs(box,n,names){
+  box.innerHTML="";
+  players.forEach((p,i)=>{
+    const d=document.createElement("div");d.className="card";d.style.margin=0;
+    let h='';
+    if(names){h=`<label class="pname"><span class="dot" style="background:${COLORS[i]}"></span><input data-n="${i}" value="${esc(p)}" aria-label="Player ${i+1} name"></label>`}
+    else h=`<div class="pname"><span class="dot" style="background:${COLORS[i]}"></span>${esc(p)}</div>`;
+    for(let k=0;k<n(i);k++)h+=`<input data-p="${i}" placeholder="Song ${k+1}" aria-label="${esc(p)} song ${k+1}" maxlength="60">`;
+    d.innerHTML=h;box.appendChild(d);
+  });
+}
+function init(){
+  players=["Player 1","Player 2","Player 3","Player 4","Player 5"];
+  buildInputs($("pgrid"),()=>4,true);
+  ["setup"].forEach(s=>$(s).classList.remove("hide"));
+  ["game","between","final"].forEach(s=>$(s).classList.add("hide"));
+}
+function readSongs(box){
+  const out=[];box.querySelectorAll("input[data-p]").forEach(el=>{const v=el.value.trim();if(v)out.push({o:+el.dataset.p,t:v})});return out;
+}
+$("demo").onclick=()=>{
+  const d=["Blinding Lights","Bohemian Rhapsody","Smells Like Teen Spirit","Levitating","Hotel California","Uptown Funk","Take On Me","Mr. Brightside","Dreams","September","Rolling in the Deep","Africa","Come Together","Shape of You","Billie Jean","Sweet Child O' Mine","Hey Ya!","Wonderwall","Lose Yourself","Believer"];
+  $("pgrid").querySelectorAll("input[data-p]").forEach((el,i)=>el.value=d[i]);
+};
+$("start").onclick=()=>{
+  players=[...$("pgrid").querySelectorAll("input[data-n]")].map((e,i)=>e.value.trim()||"Player "+(i+1));
+  songs=readSongs($("pgrid"));
+  if(songs.length<2||new Set(songs.map(s=>s.o)).size<2){alert("Add songs for at least two players.");return}
+  wins=players.map(()=>0);total=players.map(()=>0);round=1;
+  $("log").innerHTML="";
+  $("setup").classList.add("hide");$("game").classList.remove("hide");
+  newDuel();
+};
+function canDuel(){return new Set(songs.map(s=>s.o)).size>=2}
+function newDuel(){
+  pick=[];votes={};
+  $("voteBox").classList.add("hide");
+  $("sA").innerHTML="<small>Spin to pick the first song</small>";
+  $("sB").innerHTML="<small>then the second</small>";
+  $("sA").style.borderColor=$("sB").style.borderColor="";
+  if(!canDuel()){endRound();return}
+  $("spin").disabled=false;
+  render();
+}
+function wheelSongs(){return pick.length?songs.filter(s=>s.o!==pick[0].o):songs}
+function render(){
+  $("rnd").textContent=round;$("left").textContent=songs.length;
+  $("score").innerHTML=players.map((p,i)=>`<span class="chip"><span class="dot" style="background:${COLORS[i]}"></span>${esc(p)} <b>${wins[i]}</b> wins · ${songs.filter(s=>s.o===i).length} left</span>`).join("");
+  $("hint").textContent=pick.length?"Second spin: a different player's song.":"First spin of the duel.";
+  draw();
+}
+function draw(){
+  const c=$("wheel"),x=c.getContext("2d"),W=c.width,R=W/2,L=wheelSongs(),n=L.length,a=2*Math.PI/n;
+  x.clearRect(0,0,W,W);x.save();x.translate(R,R);x.rotate(angle);
+  L.forEach((s,i)=>{
+    x.beginPath();x.moveTo(0,0);x.arc(0,0,R-6,i*a,(i+1)*a);x.closePath();
+    x.fillStyle=COLORS[s.o];x.globalAlpha=i%2?.82:1;x.fill();x.globalAlpha=1;x.strokeStyle="rgba(255,255,255,.7)";x.lineWidth=2;x.stroke();
+    x.save();x.rotate(i*a+a/2);x.fillStyle="#fff";x.textAlign="right";x.textBaseline="middle";
+    const fs=Math.max(14,Math.min(34,300/n*1.4));x.font=`700 ${fs}px sans-serif`;
+    let t=s.t;const max=R-60;while(x.measureText(t).width>max-40&&t.length>3)t=t.slice(0,-2);if(t!==s.t)t+="…";
+    x.fillText(t,R-24,0);x.restore();
+  });
+  x.restore();
+  x.beginPath();x.arc(R,R,26,0,7);x.fillStyle=getComputedStyle(document.documentElement).getPropertyValue("--card");x.fill();
+}
+$("spin").onclick=()=>{
+  if(spinning)return;spinning=true;$("spin").disabled=true;
+  const L=wheelSongs(),n=L.length,a=2*Math.PI/n,idx=Math.floor(Math.random()*n);
+  // pointer at top (-90deg). slice center must land there.
+  const target=-Math.PI/2-(idx*a+a/2)+(Math.random()-.5)*a*.7;
+  const cur=((angle%(2*Math.PI))+2*Math.PI)%(2*Math.PI);
+  let end=((target%(2*Math.PI))+2*Math.PI)%(2*Math.PI);
+  let delta=end-cur;if(delta<0)delta+=2*Math.PI;delta+=2*Math.PI*(5+Math.floor(Math.random()*3));
+  const start=angle,dur=reduce()?200:4200,t0=performance.now();
+  (function f(t){
+    const p=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-p,4);
+    angle=start+delta*e;draw();
+    if(p<1)requestAnimationFrame(f);else{spinning=false;landed(L[idx])}
+  })(t0);
+};
+function reduce(){return matchMedia("(prefers-reduced-motion:reduce)").matches}
+function landed(s){
+  pick.push(s);
+  const el=pick.length===1?$("sA"):$("sB");
+  el.innerHTML=`<b>${esc(s.t)}</b><small>${esc(players[s.o])}</small>`;el.style.borderColor=COLORS[s.o];
+  if(pick.length===1){$("spin").disabled=false;render();return}
+  $("hint").textContent="";
+  const vs=players.map((_,i)=>i).filter(i=>i!==pick[0].o&&i!==pick[1].o);
+  votes={};
+  $("votes").innerHTML=vs.map(i=>`<div class="voter"><div class="pname"><span class="dot" style="background:${COLORS[i]}"></span>${esc(players[i])}</div><div class="b"><button class="ghost" data-v="${i}" data-s="0">Left</button><button class="ghost" data-v="${i}" data-s="1">Right</button></div></div>`).join("");
+  $("votes").onclick=e=>{
+    const b=e.target.closest("button");if(!b)return;
+    votes[b.dataset.v]=+b.dataset.s;
+    $("votes").querySelectorAll(`button[data-v="${b.dataset.v}"]`).forEach(x=>x.classList.toggle("sel",x===b));
+    $("confirm").disabled=Object.keys(votes).length<vs.length;
+  };
+  $("confirm").disabled=true;$("voteBox").classList.remove("hide");
+}
+$("confirm").onclick=()=>{
+  const v=Object.values(votes),r=v.filter(x=>x===1).length,w=r>v.length/2?1:0;
+  const win=pick[w],lose=pick[1-w];
+  wins[win.o]++;total[win.o]++;
+  const li=document.createElement("li");
+  li.innerHTML=`<span class="win">${esc(win.t)}</span> (${esc(players[win.o])}) beat ${esc(lose.t)} (${esc(players[lose.o])})`;
+  $("log").prepend(li);
+  songs=songs.filter(s=>s!==pick[0]&&s!==pick[1]);
+  $("confirm").disabled=true;
+  newDuel();
+};
+function endRound(){
+  $("game").classList.add("hide");
+  // leftover songs of a single player are dropped
+  $("brnd").textContent=round;
+  players_b();
+  $("between").classList.remove("hide");
+}
+function players_b(){
+  buildInputs($("bgrid"),i=>wins[i],false);
+  [...$("bgrid").children].forEach((d,i)=>{
+    const t=document.createElement("small");t.style.color="var(--mut)";
+    t.textContent=wins[i]?`${wins[i]} win${wins[i]>1?"s":""} → ${wins[i]} new song${wins[i]>1?"s":""}`:"No wins, sits out next round";
+    d.insertBefore(t,d.children[1]);
+  });
+}
+$("next").onclick=()=>{
+  songs=readSongs($("bgrid"));
+  if(!canDuel()){alert("Add songs for at least two players to continue.");return}
+  wins=players.map(()=>0);round++;
+  $("between").classList.add("hide");$("game").classList.remove("hide");newDuel();
+};
+$("end").onclick=finish;
+function finish(){
+  $("between").classList.add("hide");$("game").classList.add("hide");
+  const rows=players.map((p,i)=>({p,i,w:total[i]})).sort((a,b)=>b.w-a.w);
+  $("ftbl").innerHTML="<table style='width:100%;border-collapse:collapse'>"+rows.map((r,k)=>`<tr style="border-bottom:1px solid var(--line)"><td style="padding:8px"><span class="dot" style="background:${COLORS[r.i]};display:inline-block"></span> ${esc(r.p)}${k===0&&r.w?" 🏆":""}</td><td style="padding:8px;text-align:right"><b>${r.w}</b> total wins</td></tr>`).join("")+"</table>";
+  $("final").classList.remove("hide");
+}
+$("again").onclick=init;
+$("reset").onclick=()=>{if(confirm("Start a new game? Current progress will be lost."))init()};
+init();
+</script>
+</body>
+</html>
